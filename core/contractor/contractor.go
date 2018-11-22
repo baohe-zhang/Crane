@@ -5,42 +5,39 @@ import (
 	"sync"
 	"time"
 	"math/rand"
+	"hash/fnv"
+	"encoding/json"
 )
 
 const (
 	BUFLEN = 100
 )
 
-type ProcessorFunc func(tuple interface{}, result *interface{}, variables []interface{}) error
+type ProcessorFunc func(tuple []interface{}, result *[]interface{}, variables *[]interface{}) error
 
 type Contractor struct {
 	numWorkers int
 	workers []*Worker
-	tuples chan interface{}
-	results chan interface{}
-	procFunc ProcessorFunc
+	tuples chan []interface{}
+	results chan []interface{}
 }
 
 type Worker struct {
 	id int
 	available bool
-	results chan interface{}
+	results chan []interface{}
 	procFunc ProcessorFunc
 	variables []interface{}
 }
 
-func NewContractor(numWorkers int, procFunc ProcessorFunc, _variables []interface{}) *Contractor {
-	tuples := make(chan interface{}, BUFLEN)
-	results := make(chan interface{}, BUFLEN)
+func NewContractor(numWorkers int, procFunc ProcessorFunc) *Contractor {
+	tuples := make(chan []interface{}, BUFLEN)
+	results := make(chan []interface{}, BUFLEN)
 
+	// Create workers
 	workers := make([]*Worker, 0)
 	for i := 0; i < numWorkers; i++ {
-		// Copy variables for each worker
-		variables := make([]interface{}, 0)
-		// copy(variables, _variables)
-		variables = append(variables[:], _variables[:]...)
-
-		// Create worker
+		variables := make([]interface{}, 0) // Store bolt's global variables
 		worker := &Worker {
 			id: i,
 			available: true,
@@ -56,7 +53,6 @@ func NewContractor(numWorkers int, procFunc ProcessorFunc, _variables []interfac
 		workers: workers,
 		tuples: tuples,
 		results: results,
-		procFunc: procFunc,
 	}
 
 	return c
@@ -78,63 +74,94 @@ func (c *Contractor) Start() {
 
 func (c *Contractor) receiveTuple() {
 	words := []string{"one", "two", "three", "four", "five", "six"}
-	for i := 0; i < 20; i++ {
-		c.tuples <- words[rand.Intn(len(words))]
-		time.Sleep(1000 * time.Millisecond)
+	for i := 0; i < 1000; i++ {
+		tuple := make([]interface{}, 0)
+		tuple = append(tuple, words[rand.Intn(len(words))])
+		c.tuples <- tuple
+		time.Sleep(10 * time.Millisecond)
 	}
 }
 
 func (c *Contractor) distributeTuple() {
-	for {
-		select {
-		case tuple := <-c.tuples:
-			processed := false
-			for !processed {
-				for _, worker := range c.workers {
+	switch grouping := "fields"; grouping {
+	case "shuffle":
+		for {
+			select {
+			case tuple := <-c.tuples:
+				processed := false
+				for !processed {
+					// Round-Robin distribute
+					for _, worker := range c.workers {
+						if worker.available {
+							go worker.processTuple(tuple)
+							processed = true
+							break
+						}
+					}
+				}
+			default:
+			}
+		}
+
+	case "fields":
+		for {
+			select {
+			case tuple := <-c.tuples:
+				// distribute by fields
+				wid := hash(tuple[0]) % c.numWorkers
+				worker := c.workers[wid]
+				processed := false
+				for !processed {
 					if worker.available {
-						processed = true
 						go worker.processTuple(tuple)
+						processed = true
 						break
 					}
 				}
+			default:
 			}
-
-		default:
 		}
+	default:
 	}
 }
 
 func (c *Contractor) outputTuple() {
 	for {
 		select {
-		case result := <- c.results:
-			fmt.Printf("output tuple (%v)\n", result)
+		case <- c.results:
+			// fmt.Printf("output tuple (%v)\n", result)
 
 		default:
 		}
 	}
 }
 
-func (w *Worker) processTuple(tuple interface{}) {
+func (w *Worker) processTuple(tuple []interface{}) {
 	w.available = false
 
-	// fmt.Printf("worker (%d) receives tuple (%v)\n", w.id, tuple)
-	var result interface{}
-	w.procFunc(tuple, &result, w.variables)
-	fmt.Printf("worker id: %d, map: %p\n", w.id, w.variables[0])
-	time.Sleep(4000 * time.Millisecond) // Simulate process delay
+	// fmt.Printf("worker (%d) process tuple (%v)\n", w.id, tuple)
+	var result []interface{}
+	w.procFunc(tuple, &result, &w.variables)
+	fmt.Printf("worker (%d) output tuple (%v)\n", w.id, result)
 	w.results <- result
 
 	w.available = true
 }
 
 
-func processorFunc(tuple interface{}, result *interface{}, variables []interface{}) error {
-	// Wrap worker-scope variables
-	variable := variables[0]
-	countMap, _ := variable.(map[string]int)
+func processorFunc(tuple []interface{}, result *[]interface{}, variables *[]interface{}) error {
+	// Bolt's global variables
+	var countMap map[string]int
+	if (len(*variables) == 0) {
+		// Initialize varibales
+		countMap = make(map[string]int)
+		*variables = append(*variables, countMap)
+	} else {
+		countMap = (*variables)[0].(map[string]int)
+	}
 
-	word := tuple.(string)
+	// Bolt's process logic
+	word := tuple[0].(string)
 	count, ok := countMap[word]
 	if !ok {
 		count = 0
@@ -146,13 +173,16 @@ func processorFunc(tuple interface{}, result *interface{}, variables []interface
 	return nil
 }
 
-func main() {
-	// Wrap variables map
-	variables := make([]interface{}, 0)
-	countMap := make(map[string]int)
-	variables = append(variables, countMap)
+func hash(value interface{}) int {
+	bytes, _ := json.Marshal(value)
+	h := fnv.New32a()
+	h.Write(bytes)
+	return int(h.Sum32())
+}
 
-	contractor := NewContractor(4, processorFunc, variables)
+
+func main() {
+	contractor := NewContractor(10, processorFunc)
 	contractor.Start()
 }
 
