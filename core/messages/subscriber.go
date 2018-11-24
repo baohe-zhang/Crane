@@ -62,7 +62,7 @@ func (sub *Subscriber) RequestMessage() {
 	for {
 		message := <-sub.Request
 
-		log.Printf("Going to send message '%s' on socket %d", message.Payload, message.TargetConnId)
+		log.Printf("Going to send message '%s' on socket %s", message.Payload, message.TargetConnId)
 
 		// send message to targetConn
 		writer := bufio.NewWriter(sub.Conn)

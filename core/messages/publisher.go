@@ -5,6 +5,7 @@ import (
 	"crane/core/utils"
 	"log"
 	"net"
+	"sync"
 )
 
 const (
@@ -17,6 +18,7 @@ type Publisher struct {
 	Pool         *ConnPool
 	Channels     map[string]chan Message
 	PublishBoard chan Message
+	RWLock       sync.RWMutex
 }
 
 // Factory method to create a new publisher
@@ -65,7 +67,9 @@ func (pub *Publisher) AcceptConns() {
 		connId := conn.RemoteAddr().String()
 		log.Println(connId)
 		connChan := make(chan Message, CHANNEL_SIZE)
+		pub.RWLock.Lock()
 		pub.Channels[connId] = connChan
+		pub.RWLock.Unlock()
 
 		// add connection to pool
 		pub.Pool.Insert(connId, conn)
@@ -92,6 +96,13 @@ func (pub *Publisher) WaitMessage(msgChan chan Message, connId string) {
 		if err != nil {
 			// stop reading buffer and exit goroutine
 			pub.Pool.Delete(connId)
+			pub.RWLock.Lock()
+			msgChan <- Message{
+				Payload:      b,
+				SourceConnId: connId,
+			}
+			pub.RWLock.Unlock()
+
 			log.Printf("Can't read line from socket: %s. Connections in pool: %d", err, pub.Pool.Size())
 			break
 		} else {
@@ -100,10 +111,12 @@ func (pub *Publisher) WaitMessage(msgChan chan Message, connId string) {
 				continue
 			}
 			// push request to message channel
+			pub.RWLock.Lock()
 			msgChan <- Message{
 				Payload:      request,
 				SourceConnId: connId,
 			}
+			pub.RWLock.Unlock()
 		}
 	}
 }
