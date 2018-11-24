@@ -3,14 +3,15 @@ package main
 import (
 	"fmt"
 	"sync"
-	"time"
-	"math/rand"
-	"hash/fnv"
+	// "time"
+	// "math/rand"
 	"encoding/json"
+	"net"
 )
 
 const (
 	BUFLEN = 100
+	BUFFSIZE = 1024
 )
 
 type ProcessorFunc func(tuple []interface{}, result *[]interface{}, variables *[]interface{}) error
@@ -20,6 +21,7 @@ type Contractor struct {
 	workers []*Worker
 	tuples chan []interface{}
 	results chan []interface{}
+	port string
 }
 
 type Worker struct {
@@ -30,7 +32,7 @@ type Worker struct {
 	variables []interface{}
 }
 
-func NewContractor(numWorkers int, procFunc ProcessorFunc) *Contractor {
+func NewContractor(numWorkers int, procFunc ProcessorFunc, port string) *Contractor {
 	tuples := make(chan []interface{}, BUFLEN)
 	results := make(chan []interface{}, BUFLEN)
 
@@ -53,6 +55,7 @@ func NewContractor(numWorkers int, procFunc ProcessorFunc) *Contractor {
 		workers: workers,
 		tuples: tuples,
 		results: results,
+		port: port,
 	}
 
 	return c
@@ -63,7 +66,7 @@ func (c *Contractor) Start() {
 	defer close(c.results)
 
 	fmt.Println("contractor start")
-	go c.receiveTuple()
+	go c.setupListener()
 	go c.distributeTuple()
 	go c.outputTuple()
 
@@ -72,14 +75,42 @@ func (c *Contractor) Start() {
 	wg.Wait()
 }
 
-func (c *Contractor) receiveTuple() {
-	words := []string{"one", "two", "three", "four", "five", "six"}
-	for i := 0; i < 1000; i++ {
-		tuple := make([]interface{}, 0)
-		tuple = append(tuple, words[rand.Intn(len(words))])
-		c.tuples <- tuple
-		time.Sleep(10 * time.Millisecond)
+func (c *Contractor) setupListener() {
+	listener, err := net.Listen("tcp", ":"+c.port)
+	fmt.Println("listening on port " + c.port)
+	if err != nil {
+		fmt.Println(err.Error())
 	}
+	for {
+		conn, err := listener.Accept()
+		if err != nil {
+			fmt.Println(err.Error())
+		}
+		go c.receiveTuple(conn)
+	}
+}
+
+func (c *Contractor) receiveTuple(conn net.Conn) {
+	defer conn.Close()
+
+	for {
+		buf := make([]byte, BUFFSIZE)
+		n, err := conn.Read(buf)
+		if err != nil {
+			fmt.Println(err.Error())
+		}
+		var tuple []interface{}
+		json.Unmarshal(buf[:n], &tuple)
+		c.tuples <- tuple
+	}
+
+	// words := []string{"one", "two", "three", "four", "five", "six"}
+	// for i := 0; i < 1000; i++ {
+	// 	tuple := make([]interface{}, 0)
+	// 	tuple = append(tuple, words[rand.Intn(len(words))])
+	// 	c.tuples <- tuple
+	// 	time.Sleep(10 * time.Millisecond)
+	// }
 }
 
 func (c *Contractor) distributeTuple() {
@@ -125,17 +156,6 @@ func (c *Contractor) distributeTuple() {
 	}
 }
 
-func (c *Contractor) outputTuple() {
-	for {
-		select {
-		case <- c.results:
-			// fmt.Printf("output tuple (%v)\n", result)
-
-		default:
-		}
-	}
-}
-
 func (w *Worker) processTuple(tuple []interface{}) {
 	w.available = false
 
@@ -148,6 +168,16 @@ func (w *Worker) processTuple(tuple []interface{}) {
 	w.available = true
 }
 
+func (c *Contractor) outputTuple() {
+	for {
+		select {
+		case <- c.results:
+			// fmt.Printf("output tuple (%v)\n", result)
+
+		default:
+		}
+	}
+}
 
 func processorFunc(tuple []interface{}, result *[]interface{}, variables *[]interface{}) error {
 	// Bolt's global variables
@@ -173,19 +203,11 @@ func processorFunc(tuple []interface{}, result *[]interface{}, variables *[]inte
 	return nil
 }
 
-func hash(value interface{}) int {
-	bytes, _ := json.Marshal(value)
-	h := fnv.New32a()
-	h.Write(bytes)
-	return int(h.Sum32())
-}
-
 
 func main() {
-	contractor := NewContractor(10, processorFunc)
+	contractor := NewContractor(10, processorFunc, "5000")
 	contractor.Start()
 }
-
 
 
 
