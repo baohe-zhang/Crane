@@ -30,7 +30,15 @@ func (s *Supervisor) StartDaemon() {
 	for {
 		select {
 		case rcvMsg := <-s.Sub.PublishBoard:
-			log.Printf("Receive Message from %s: %s", rcvMsg.SourceConnId, rcvMsg.Payload)
+			log.Printf("Receive Message from %s: %s\n", rcvMsg.SourceConnId, rcvMsg.Payload)
+			payload := utils.CheckType(rcvMsg.Payload)
+			switch payload.Header.Type {
+			case utils.BOLT_DISPATCH:
+				task := &utils.BoltTaskMessage{}
+				utils.Unmarshal(payload.Content, task)
+				log.Printf("Receive Bolt Dispatch %s\n", task.BoltName)
+			}
+		default:
 
 		}
 	}

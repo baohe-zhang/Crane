@@ -5,7 +5,12 @@ import (
 )
 
 const (
-	JOIN_REQUEST = "join_reqeust"
+	JOIN_REQUEST        = "join_reqeust"
+	TOPO_SUBMISSION     = "topo_submission"
+	BOLT_DISPATCH       = "bolt_dispatch"
+	CONN_NOTIFY         = "conn_notify"
+	GROUPING_BY_FIELD   = "grouping_by_field"
+	GROUPING_BY_SHUFFLE = "grouping_by_shuffle"
 )
 
 type PayloadHeader struct {
@@ -19,6 +24,25 @@ type PayloadMessage struct {
 
 type JoinRequest struct {
 	Name string
+}
+
+type TopologyMessage struct {
+	Bolts []BoltMessage
+}
+
+type BoltMessage struct {
+	Name         string
+	InstNum      int
+	PrevBoltName string
+	GroupingHint string
+	FieldIndex   int
+}
+
+type BoltTaskMessage struct {
+	BoltName     string
+	PrevBoltAddr []string
+	GroupingHint string
+	FieldIndex   int
 }
 
 func Marshal(contentType string, content interface{}) ([]byte, error) {

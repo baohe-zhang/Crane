@@ -10,7 +10,13 @@ import (
 
 const (
 	CHANNEL_SIZE = 100
+	CONN_DELETE  = "delete"
 )
+
+// The notify of message connection itselt
+type ConnNotify struct {
+	Type string
+}
 
 // Publisher who publishes messages to subscribers and meanwhile receive messages
 type Publisher struct {
@@ -97,6 +103,7 @@ func (pub *Publisher) WaitMessage(msgChan chan Message, connId string) {
 			// stop reading buffer and exit goroutine
 			pub.Pool.Delete(connId)
 			pub.RWLock.Lock()
+			b, _ := utils.Marshal(utils.CONN_NOTIFY, ConnNotify{Type: CONN_DELETE})
 			msgChan <- Message{
 				Payload:      b,
 				SourceConnId: connId,

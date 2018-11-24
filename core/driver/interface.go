@@ -3,6 +3,7 @@ package main
 import (
 	"crane/core/messages"
 	"crane/core/utils"
+	"hash/fnv"
 	"log"
 	"sync"
 )
@@ -43,7 +44,41 @@ func (d *Driver) StartDaemon() {
 					d.SupervisorIdMap[uint32(d.Pub.Pool.Size()-1)] = connId
 					d.LockSIM.Unlock()
 					log.Println("Supervisor ID Name", content.Name)
-
+				case utils.CONN_NOTIFY:
+					content := &messages.ConnNotify{}
+					utils.Unmarshal(payload.Content, content)
+					if content.Type == messages.CONN_DELETE {
+						d.LockSIM.Lock()
+						for index, connId_ := range d.SupervisorIdMap {
+							if connId_ == connId {
+								delete(d.SupervisorIdMap, index)
+								delete(d.Pub.Channels, connId)
+							}
+						}
+						d.LockSIM.Unlock()
+					}
+				case utils.TOPO_SUBMISSION:
+					content := &utils.TopologyMessage{}
+					utils.Unmarshal(payload.Content, content)
+					for _, bolt := range content.Bolts {
+						task := utils.BoltTaskMessage{
+							BoltName:     bolt.Name,
+							PrevBoltAddr: make([]string, 0),
+							GroupingHint: bolt.GroupingHint,
+							FieldIndex:   bolt.FieldIndex,
+						}
+						b, _ := utils.Marshal(utils.BOLT_DISPATCH, task)
+						for i := 0; i < bolt.InstNum; i++ {
+							id := i
+							if i >= d.Pub.Pool.Size() {
+								id = i % d.Pub.Pool.Size()
+							}
+							d.Pub.PublishBoard <- messages.Message{
+								Payload:      b,
+								TargetConnId: d.SupervisorIdMap[uint32(id)],
+							}
+						}
+					}
 				}
 			default:
 			}
