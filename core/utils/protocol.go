@@ -34,7 +34,7 @@ type TopologyMessage struct {
 type BoltMessage struct {
 	Name         string
 	InstNum      int
-	PrevBoltName string
+	PrevTaskName string
 	GroupingHint string
 	FieldIndex   int
 }
