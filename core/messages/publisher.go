@@ -13,7 +13,7 @@ const (
 	CONN_DELETE  = "delete"
 )
 
-// The notify of message connection itselt
+// The notify of message connection itself
 type ConnNotify struct {
 	Type string
 }

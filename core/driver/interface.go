@@ -41,7 +41,7 @@ func (d *Driver) StartDaemon() {
 					content := &utils.JoinRequest{}
 					utils.Unmarshal(payload.Content, content)
 					d.LockSIM.Lock()
-					d.SupervisorIdMap[uint32(d.Pub.Pool.Size()-1)] = connId
+					d.SupervisorIdMap[uint32(len(d.SupervisorIdMap))] = connId
 					d.LockSIM.Unlock()
 					log.Println("Supervisor ID Name", content.Name)
 				case utils.CONN_NOTIFY:
@@ -58,6 +58,10 @@ func (d *Driver) StartDaemon() {
 						d.LockSIM.Unlock()
 					}
 				case utils.TOPO_SUBMISSION:
+					d.Pub.PublishBoard <- messages.Message{
+						Payload:      []byte("OK"),
+						TargetConnId: connId,
+					}
 					content := &utils.TopologyMessage{}
 					utils.Unmarshal(payload.Content, content)
 					for _, bolt := range content.Bolts {
@@ -70,15 +74,21 @@ func (d *Driver) StartDaemon() {
 						b, _ := utils.Marshal(utils.BOLT_DISPATCH, task)
 						for i := 0; i < bolt.InstNum; i++ {
 							id := i
-							if i >= d.Pub.Pool.Size() {
-								id = i % d.Pub.Pool.Size()
+							if i >= len(d.SupervisorIdMap) && i != 0 {
+								id = i % len(d.SupervisorIdMap)
+							} else if len(d.SupervisorIdMap) == 0 {
+								log.Println("No nodes inside the cluster")
+								break
 							}
+							targetId := d.SupervisorIdMap[uint32(id)]
+							log.Println("ConnId Target:", id, uint32(id), targetId)
 							d.Pub.PublishBoard <- messages.Message{
 								Payload:      b,
-								TargetConnId: d.SupervisorIdMap[uint32(id)],
+								TargetConnId: targetId,
 							}
 						}
 					}
+
 				}
 			default:
 			}

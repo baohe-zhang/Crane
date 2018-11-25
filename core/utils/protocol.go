@@ -7,6 +7,7 @@ import (
 const (
 	JOIN_REQUEST        = "join_reqeust"
 	TOPO_SUBMISSION     = "topo_submission"
+	TOPO_SUBMISSION_RES = "topo_submission_response"
 	BOLT_DISPATCH       = "bolt_dispatch"
 	CONN_NOTIFY         = "conn_notify"
 	GROUPING_BY_FIELD   = "grouping_by_field"
