@@ -46,6 +46,8 @@ type BoltTaskMessage struct {
 	FieldIndex   int
 }
 
+
+
 func Marshal(contentType string, content interface{}) ([]byte, error) {
 	contentBytes, err := json.Marshal(content)
 	if err != nil {
