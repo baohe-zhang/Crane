@@ -27,23 +27,16 @@ type JoinRequest struct {
 	Name string
 }
 
-type TopologyMessage struct {
-	Bolts []BoltMessage
-}
-
-type BoltMessage struct {
-	Name         string
-	InstNum      int
-	PrevTaskName string
-	GroupingHint string
-	FieldIndex   int
-}
-
 type BoltTaskMessage struct {
-	BoltName     string
-	PrevBoltAddr []string
-	GroupingHint string
-	FieldIndex   int
+	Name                 string
+	Port                 string
+	PrevBoltAddr         []string
+	PrevBoltGroupingHind string
+	PrevBoltFieldIndex   int
+	SuccBoltGroupingHint string
+	SuccBoltFieldIndex   int
+	PluginFile           string
+	PluginSymbol         string
 }
 
 func Marshal(contentType string, content interface{}) ([]byte, error) {

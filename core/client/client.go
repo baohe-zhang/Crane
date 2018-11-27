@@ -1,8 +1,11 @@
 package main
 
 import (
+	"crane/bolt"
 	"crane/core/messages"
 	"crane/core/utils"
+	"crane/spout"
+	"crane/topology"
 	"log"
 )
 
@@ -39,7 +42,7 @@ func (c *Client) Start() {
 }
 
 // Contact driver node to notify the topology should be computed and scheduled
-func (c *Client) ContactDriver(topoMsg utils.TopologyMessage) {
+func (c *Client) ContactDriver(topoMsg topology.Topology) {
 	b, err := utils.Marshal(utils.TOPO_SUBMISSION, topoMsg)
 	if err != nil {
 		log.Println(err)
@@ -58,15 +61,33 @@ func main() {
 		log.Println("Initialize client failed")
 		return
 	}
-	tm := utils.TopologyMessage{}
-	tm.Bolts = make([]utils.BoltMessage, 0)
-	bm := utils.BoltMessage{
-		Name:         "wordcount",
-		InstNum:      4,
-		PrevBoltName: "None",
-		GroupingHint: utils.GROUPING_BY_SHUFFLE,
+	tm := topology.Topology{}
+	tm.Bolts = make([]bolt.BoltInst, 0)
+	bm := bolt.BoltInst{
+		Name:          "wordcount",
+		InstNum:       4,
+		PrevTaskNames: []string{"wordgen", "wordgen2"},
+		GroupingHint:  utils.GROUPING_BY_SHUFFLE,
+		PluginFile:    "wordcount.so",
+		PluginSymbol:  "WordCountBolt",
 	}
 	tm.Bolts = append(tm.Bolts, bm)
+	bm2 := bolt.BoltInst{
+		Name:          "wordsplit",
+		InstNum:       4,
+		PrevTaskNames: []string{"wordgen", "wordgen2"},
+		GroupingHint:  utils.GROUPING_BY_FIELD,
+		FieldIndex:    0,
+		PluginFile:    "wordsplit.so",
+		PluginSymbol:  "WordSplitBolt",
+	}
+	tm.Bolts = append(tm.Bolts, bm2)
+	sp := spout.NewSpoutInst("wordgen", "wordgen.so", "WordGen", utils.GROUPING_BY_SHUFFLE, 0)
+	sp2 := spout.NewSpoutInst("wordgen2", "wordgen.so", "WordGen", utils.GROUPING_BY_SHUFFLE, 0)
+	sp.SetInstanceNum(3)
+	sp2.SetInstanceNum(3)
+	tm.AddSpout(sp)
+	tm.AddSpout(sp2)
 	client.ContactDriver(tm)
 	client.Start()
 }

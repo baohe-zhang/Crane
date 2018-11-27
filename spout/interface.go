@@ -14,7 +14,7 @@ type Spout interface {
 }
 
 type SpoutInst struct {
-	SpoutName    string
+	Name         string
 	InputFile    string
 	PluginFile   string
 	PluginSymbol string
@@ -25,10 +25,21 @@ type SpoutInst struct {
 
 func NewSpoutInst(name, pluginFile, pluginSymbol string, grouping string, mainField int) *SpoutInst {
 	spoutInst := &SpoutInst{}
-	spoutInst.SpoutName = name
+	spoutInst.Name = name
 	spoutInst.PluginFile = pluginFile
 	spoutInst.PluginSymbol = pluginSymbol
 	spoutInst.GroupingHint = grouping
 	spoutInst.FieldIndex = mainField
 	spoutInst.InstNum = 1
+	return spoutInst
+}
+
+func (si *SpoutInst) SetInstanceNum(n int) {
+	if n > 0 {
+		si.InstNum = n
+	}
+}
+
+func (si *SpoutInst) SetInputFile(input string) {
+	si.InputFile = input
 }
