@@ -17,7 +17,7 @@ const (
 	GROUPING_BY_ALL     = "grouping_by_all"
 
 	CONTRACTOR_BASE_PORT = 6000
-	DRIVER_PORT          = 5005
+	DRIVER_PORT          = 5050
 )
 
 type PayloadHeader struct {

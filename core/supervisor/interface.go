@@ -5,6 +5,7 @@ import (
 	"crane/core/messages"
 	"crane/core/spoutworker"
 	"crane/core/utils"
+	"flag"
 	"fmt"
 	"log"
 )
@@ -88,7 +89,12 @@ func (s *Supervisor) SendJoinRequest() {
 }
 
 func main() {
-	supervisor := NewSupervisor(":" + fmt.Sprintf("%d", utils.DRIVER_PORT))
+	driverIpPtr := flag.String("h", "127.0.0.1", "Driver's IP address")
+	flag.Parse()
+	LocalIP := utils.GetLocalIP().String()
+	LocalHostname := utils.GetLocalHostname()
+	log.Printf("Local Machine Info [%s] [%s]\n", LocalIP, LocalHostname)
+	supervisor := NewSupervisor(*driverIpPtr + ":" + fmt.Sprintf("%d", utils.DRIVER_PORT))
 	if supervisor == nil {
 		log.Println("Initialize supervisor failed")
 		return
