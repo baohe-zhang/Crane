@@ -1,17 +1,4 @@
-package spout
-
-import ()
-
-type SpoutOutputCollector struct {
-}
-
-type OutputFieldsDeclarer struct {
-}
-
-type Spout interface {
-	Open()
-	NextTuple() []interface{}
-}
+package main
 
 type SpoutInst struct {
 	Name         string
