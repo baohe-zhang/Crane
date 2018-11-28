@@ -26,8 +26,8 @@ func NewSupervisor(driverAddr string) *Supervisor {
 	if supervisor.Sub == nil {
 		return nil
 	}
-	s.BoltWorkers = make([]*boltworker.BoltWorker, 0)
-	s.SpoutWorkers = make([]*spoutworker.SpoutWorker, 0)
+	supervisor.BoltWorkers = make([]*boltworker.BoltWorker, 0)
+	supervisor.SpoutWorkers = make([]*spoutworker.SpoutWorker, 0)
 	supervisor.VmIndexMap = make(map[int]string)
 	return supervisor
 }
