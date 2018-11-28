@@ -1,4 +1,4 @@
-package main 
+package boltworker 
 
 import (
 	"fmt"
@@ -228,19 +228,19 @@ func (bw *BoltWorker) buildSucIndexMap() {
 	})
 }
 
-func main() {
-	boltWorker_1 := NewBoltWorker(10, "ProcFunc", "5001", []string{"127.0.0.1:5000"}, "byFields", 0, "shuffle", 0)
-	boltWorker_2 := NewBoltWorker(10, "ProcFunc", "5002", []string{"127.0.0.1:5001"}, "byFields", 0, "shuffle", 0)
-	boltWorker_3 := NewBoltWorker(10, "ProcFunc", "5003", []string{"127.0.0.1:5002"}, "byFields", 0, "all", 0)
+// func main() {
+// 	boltWorker_1 := NewBoltWorker(10, "ProcFunc", "5001", []string{"127.0.0.1:5000"}, "byFields", 0, "shuffle", 0)
+// 	boltWorker_2 := NewBoltWorker(10, "ProcFunc", "5002", []string{"127.0.0.1:5001"}, "byFields", 0, "shuffle", 0)
+// 	boltWorker_3 := NewBoltWorker(10, "ProcFunc", "5003", []string{"127.0.0.1:5002"}, "byFields", 0, "all", 0)
 
-	go boltWorker_1.Start()
-	go boltWorker_2.Start()
-	go boltWorker_3.Start()
+// 	go boltWorker_1.Start()
+// 	go boltWorker_2.Start()
+// 	go boltWorker_3.Start()
 
-	var wg sync.WaitGroup
-	wg.Add(1)
-	wg.Wait()
-}
+// 	var wg sync.WaitGroup
+// 	wg.Add(1)
+// 	wg.Wait()
+// }
 
 
 

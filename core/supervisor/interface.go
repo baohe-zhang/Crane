@@ -1,7 +1,9 @@
 package main
 
 import (
+	"crane/core/boltworker"
 	"crane/core/messages"
+	"crane/core/spoutworker"
 	"crane/core/utils"
 	"fmt"
 	"log"
@@ -10,8 +12,9 @@ import (
 // Supervisor, the slave node for accepting the schedule from the master node
 // and execute the task, spouts or bolts
 type Supervisor struct {
-	Sub         *messages.Subscriber
-	Contractors []*contractor.Contractor
+	Sub          *messages.Subscriber
+	BoltWorkers  []*boltworker.BoltWorker
+	SpoutWorkers []*spoutworker.SpoutWorker
 }
 
 // Factory mode to return the Supervisor instance
@@ -26,6 +29,9 @@ func NewSupervisor(driverAddr string) *Supervisor {
 
 // Daemon function for supervisor service
 func (s *Supervisor) StartDaemon() {
+	s.BoltWorkers = make([]*boltworker.BoltWorker, 0)
+	s.SpoutWorkers = make([]*spoutworker.SpoutWorker, 0)
+
 	go s.Sub.RequestMessage()
 	go s.Sub.ReadMessage()
 	s.SendJoinRequest()
@@ -40,12 +46,16 @@ func (s *Supervisor) StartDaemon() {
 			case utils.BOLT_TASK:
 				task := &utils.BoltTaskMessage{}
 				utils.Unmarshal(payload.Content, task)
+				bw := boltworker.NewBoltWorker(10, task.Name, task.Port, task.PrevBoltAddr,
+					task.PrevBoltGroupingHint, task.PrevBoltFieldIndex,
+					task.SuccBoltGroupingHint, task.SuccBoltFieldIndex)
+				s.BoltWorkers = append(s.BoltWorkers, bw)
+
 				log.Printf("Receive Bolt Dispatch %s Previous workers\n", task.Name, task.PrevBoltAddr)
 			case utils.SPOUT_TASK:
 				task := &utils.SpoutTaskMessage{}
 				utils.Unmarshal(payload.Content, task)
-				log.Printf("Receive Bolt Dispatch %s \n", task.Name)
-
+				log.Printf("Receive Spout Dispatch %s \n", task.Name)
 			}
 
 		default:

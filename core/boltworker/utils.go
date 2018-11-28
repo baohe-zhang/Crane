@@ -1,4 +1,4 @@
-package main 
+package boltworker 
 
 import (
 	"hash/fnv"
