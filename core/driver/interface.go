@@ -93,7 +93,9 @@ func (d *Driver) StartDaemon() {
 
 // Build the graph topology using vector-edge map
 func (d *Driver) BuildTopology(topo *topology.Topology) {
+	// make the map for a task name (spout or bolt) to the task instance
 	d.TopologyGraph = make(map[string][]interface{})
+	// build the vectors table
 	for i, _ := range topo.Bolts {
 		preVecs := topo.Bolts[i].PrevTaskNames
 		for _, vec := range preVecs {
@@ -119,7 +121,7 @@ func (d *Driver) BuildTopology(topo *topology.Topology) {
 	addrs := make(map[int][]interface{})
 	d.GenTopologyMessages("None", &visited, &count, &addrs)
 	d.PrintTopology("None", 0)
-	fmt.Println(" ")
+	fmt.Println(addrs)
 	for id, tasks := range addrs {
 		targetId := d.SupervisorIdMap[uint32(id)]
 		for offset, task := range tasks {
@@ -133,6 +135,7 @@ func (d *Driver) BuildTopology(topo *topology.Topology) {
 					PluginSymbol: spout.PluginSymbol,
 					Port:         fmt.Sprintf("%d", utils.CONTRACTOR_BASE_PORT+offset),
 				}
+				fmt.Println(msg.Name, msg.Port)
 				b, _ := utils.Marshal(utils.SPOUT_TASK, msg)
 				d.Pub.PublishBoard <- messages.Message{
 					Payload:      b,
@@ -149,6 +152,7 @@ func (d *Driver) BuildTopology(topo *topology.Topology) {
 					Port:                 fmt.Sprintf("%d", utils.CONTRACTOR_BASE_PORT+offset),
 				}
 
+				fmt.Println(msg.Name, msg.Port)
 				_, ok = d.SpoutMap[bolt.PrevTaskNames[0]]
 				if ok {
 					prev := d.SpoutMap[bolt.PrevTaskNames[0]]

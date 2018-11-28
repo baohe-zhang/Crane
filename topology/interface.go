@@ -2,8 +2,10 @@ package topology
 
 import (
 	"crane/bolt"
+	"crane/core/client"
+	"crane/core/utils"
 	"crane/spout"
-	//"log"
+	"log"
 )
 
 type Topology struct {
@@ -27,5 +29,16 @@ func (t *Topology) AddBolt(b *bolt.BoltInst) {
 }
 
 func (t *Topology) Submit(driverAddr string) {
-
+	client := client.NewClient(driverAddr)
+	if client == nil {
+		log.Println("Initialize client failed")
+		return
+	}
+	b, err := utils.Marshal(utils.TOPO_SUBMISSION, *t)
+	if err != nil {
+		log.Println(err)
+		return
+	}
+	client.ContactDriver(b)
+	client.Start()
 }

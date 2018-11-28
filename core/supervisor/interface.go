@@ -47,17 +47,17 @@ func (s *Supervisor) StartDaemon() {
 			case utils.BOLT_TASK:
 				task := &utils.BoltTaskMessage{}
 				utils.Unmarshal(payload.Content, task)
-				bw := boltworker.NewBoltWorker(10, task.PluginFile, task.Name, task.Port, task.PrevBoltAddr,
-					task.PrevBoltGroupingHint, task.PrevBoltFieldIndex,
-					task.SuccBoltGroupingHint, task.SuccBoltFieldIndex)
-				s.BoltWorkers = append(s.BoltWorkers, bw)
-				log.Printf("Receive Bolt Dispatch %s Previous workers\n", task.Name, task.PrevBoltAddr)
+				/*bw := boltworker.NewBoltWorker(10, task.PluginFile, task.Name, task.Port, task.PrevBoltAddr,*/
+				//task.PrevBoltGroupingHint, task.PrevBoltFieldIndex,
+				//task.SuccBoltGroupingHint, task.SuccBoltFieldIndex)
+				/*s.BoltWorkers = append(s.BoltWorkers, bw)*/
+				log.Printf("Receive Bolt Dispatch %s Previous workers %v\n", task.Name, task.PrevBoltAddr)
 
 			case utils.SPOUT_TASK:
 				task := &utils.SpoutTaskMessage{}
 				utils.Unmarshal(payload.Content, task)
-				sw := spoutworker.NewSpoutWorker(task.PluginFile, task.Name, task.Port, task.GroupingHint, task.FieldIndex)
-				s.SpoutWorkers = append(s.SpoutWorkers, sw)
+				/*sw := spoutworker.NewSpoutWorker(task.PluginFile, task.Name, task.Port, task.GroupingHint, task.FieldIndex)*/
+				/*s.SpoutWorkers = append(s.SpoutWorkers, sw)*/
 				log.Printf("Receive Spout Dispatch %s \n", task.Name)
 
 			case utils.TASK_ALL_DISPATCHED:
