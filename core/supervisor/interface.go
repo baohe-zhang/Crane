@@ -3,6 +3,7 @@ package main
 import (
 	"crane/core/messages"
 	"crane/core/utils"
+	"crane/core/boltworker"
 	"fmt"
 	"log"
 )
@@ -11,7 +12,7 @@ import (
 // and execute the task, spouts or bolts
 type Supervisor struct {
 	Sub *messages.Subscriber
-	Contractors []*contractor.Contractor
+	BoltWorkers []*boltworker.BoltWorker
 }
 
 // Factory mode to return the Supervisor instance
@@ -26,6 +27,8 @@ func NewSupervisor(driverAddr string) *Supervisor {
 
 // Daemon function for supervisor service
 func (s *Supervisor) StartDaemon() {
+	s.BoltWorkers = make([]*boltworker.BoltWorker, 0)
+
 	go s.Sub.RequestMessage()
 	go s.Sub.ReadMessage()
 	s.SendJoinRequest()
@@ -41,8 +44,14 @@ func (s *Supervisor) StartDaemon() {
 			case utils.BOLT_TASK:
 				task := &utils.BoltTaskMessage{}
 				utils.Unmarshal(payload.Content, task)
-
+				bw := boltworker.NewBoltWorker(10, task.Name, task.Port, task.PrevBoltAddr, 
+												task.PrevBoltGroupingHint, task.PrevBoltFieldIndex, 
+												task.SuccBoltGroupingHint, task.SuccBoltFieldIndex)
+				s.BoltWorkers = append(s.BoltWorkers, bw)
 				log.Printf("Receive Bolt Dispatch %s\n", task.Name)
+				
+			case utils.SPOUT_TASK:
+				
 			}
 
 		default:
