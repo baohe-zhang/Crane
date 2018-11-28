@@ -27,6 +27,7 @@ func NewSupervisor(driverAddr string) *Supervisor {
 		return nil
 	}
 	supervisor.VmIndexMap = make([]string, 0)
+	supervisor.VmIndexMap = append(supervisor.VmIndexMap, "127.0.0.1")
 	return supervisor
 }
 
