@@ -297,6 +297,10 @@ func (d *Driver) Hashcode(id string) uint32 {
 
 func main() {
 	driver := NewDriver(":" + fmt.Sprintf("%d", utils.DRIVER_PORT))
+	LocalIP := utils.GetLocalIP().String()
+	LocalHostname := utils.GetLocalHostname()
+	log.Printf("Local Machine Info [%s] [%s]\n", LocalIP, LocalHostname)
+
 	driver.VmIndexMap = utils.GetVmMap()
 	driver.StartDaemon()
 }
