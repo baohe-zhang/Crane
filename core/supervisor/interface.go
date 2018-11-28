@@ -3,6 +3,7 @@ package main
 import (
 	"crane/core/messages"
 	"crane/core/utils"
+	"crane/core/contractor"
 	"log"
 )
 
@@ -10,6 +11,7 @@ import (
 // and execute the task, spouts or bolts
 type Supervisor struct {
 	Sub *messages.Subscriber
+	Contractors []*contractor.Contractor
 }
 
 // Factory mode to return the Supervisor instance
@@ -27,19 +29,30 @@ func (s *Supervisor) StartDaemon() {
 	go s.Sub.RequestMessage()
 	go s.Sub.ReadMessage()
 	s.SendJoinRequest()
+
 	for {
 		select {
 		case rcvMsg := <-s.Sub.PublishBoard:
 			log.Printf("Receive Message from %s: %s\n", rcvMsg.SourceConnId, rcvMsg.Payload)
 			payload := utils.CheckType(rcvMsg.Payload)
+
 			switch payload.Header.Type {
-			case utils.BOLT_DISPATCH:
+
+			case utils.BOLT_TASK:
 				task := &utils.BoltTaskMessage{}
 				utils.Unmarshal(payload.Content, task)
-				log.Printf("Receive Bolt Dispatch %s\n", task.BoltName)
-			}
-		default:
+				contra := contractor.NewContractor(10, task.Name, task.Port, task.PrevBoltAddr, 
+												task.PrevBoltGroupingHint, task.PrevBoltFieldIndex, 
+												task.SuccBoltGroupingHint, task.SuccBoltFieldIndex)
+				s.Contractors = append(s.Contractors, contra)
 
+			case utils.SBOLT_TASK:
+				task := 
+
+			// case utils.SEND_FINISHED:
+			}
+
+		default:
 		}
 	}
 }

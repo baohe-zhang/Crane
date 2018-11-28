@@ -8,7 +8,7 @@ const (
 	JOIN_REQUEST        = "join_reqeust"
 	TOPO_SUBMISSION     = "topo_submission"
 	TOPO_SUBMISSION_RES = "topo_submission_response"
-	BOLT_DISPATCH       = "bolt_dispatch"
+	BOLT_TASK       	= "bolt_task"
 	CONN_NOTIFY         = "conn_notify"
 	GROUPING_BY_FIELD   = "grouping_by_field"
 	GROUPING_BY_SHUFFLE = "grouping_by_shuffle"
