@@ -5,12 +5,12 @@ import (
 	"crypto/sha256"
 	"encoding/base64"
 	"encoding/binary"
+	"encoding/json"
 	"fmt"
+	"hash/fnv"
 	"net"
 	"os"
 	"os/exec"
-	"hash/fnv"
-	"encoding/json"
 	"plugin"
 )
 
@@ -89,6 +89,17 @@ func GetLocalHostname() string {
 	hostname = hostname[:len(hostname)-1] // removing EOL
 
 	return hostname
+}
+
+// Get VM Index to IP mapping
+func GetVmMap() []string {
+	res := make([]string, 0)
+	for i := 1; i <= 10; i++ {
+		host := fmt.Sprintf("fa18-cs425-g29-%.2d.cs.illinois.edu", i)
+		addr := LookupIP(host)
+		res = append(res, addr)
+	}
+	return res
 }
 
 func LookupIP(hostname string) string {
