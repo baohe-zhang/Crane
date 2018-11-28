@@ -152,7 +152,7 @@ func (bw *BoltWorker) distributeTuple() {
 		}
 	case "byFields":
 		for tuple := range bw.tuples {
-			execid := hash(tuple[bw.preField]) % bw.numWorkers
+			execid := utils.Hash(tuple[bw.preField]) % bw.numWorkers
 			executor := bw.executors[execid]
 			processed := false
 			for !processed {
