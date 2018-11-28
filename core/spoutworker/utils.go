@@ -1,11 +1,11 @@
 package main 
 
 import (
+	"fmt"
 	"hash/fnv"
 	"encoding/json"
 	"plugin"
 	"os"
-	"fmt"
 )
 
 func hash(value interface{}) int {
@@ -40,3 +40,4 @@ func lookupProcFunc(procFuncName string) func([]interface{}, *[]interface{}, *[]
 
 	return procFunc
 }
+

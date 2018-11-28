@@ -10,7 +10,8 @@ import (
 // Supervisor, the slave node for accepting the schedule from the master node
 // and execute the task, spouts or bolts
 type Supervisor struct {
-	Sub *messages.Subscriber
+	Sub         *messages.Subscriber
+	Contractors []*contractor.Contractor
 }
 
 // Factory mode to return the Supervisor instance
@@ -28,11 +29,13 @@ func (s *Supervisor) StartDaemon() {
 	go s.Sub.RequestMessage()
 	go s.Sub.ReadMessage()
 	s.SendJoinRequest()
+
 	for {
 		select {
 		case rcvMsg := <-s.Sub.PublishBoard:
 			log.Printf("Receive Message from %s: %s\n", rcvMsg.SourceConnId, rcvMsg.Payload)
 			payload := utils.CheckType(rcvMsg.Payload)
+
 			switch payload.Header.Type {
 			case utils.BOLT_TASK:
 				task := &utils.BoltTaskMessage{}
@@ -42,9 +45,10 @@ func (s *Supervisor) StartDaemon() {
 				task := &utils.SpoutTaskMessage{}
 				utils.Unmarshal(payload.Content, task)
 				log.Printf("Receive Bolt Dispatch %s \n", task.Name)
-			}
-		default:
 
+			}
+
+		default:
 		}
 	}
 }

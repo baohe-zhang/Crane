@@ -4,12 +4,9 @@ import (
 	"fmt"
 	"sync"
 	"time"
-	// "math/rand"
 	"encoding/json"
 	"net"
-	"plugin"
 	"crane/core/messages"
-	"os"
 )
 
 const (
@@ -230,67 +227,6 @@ func (bw *BoltWorker) buildSucIndexMap() {
 		bw.rwmutex.Unlock()
 	})
 }
-
-func lookupProcFunc(procFuncName string) func([]interface{}, *[]interface{}, *[]interface{}) error {
-	// Load module
-	plug, err := plugin.Open("process/process.so")
-	if err != nil {
-		fmt.Println(err)
-		os.Exit(1)
-	}
-
-	// Look up a symbol, in this case, the ProcFunc
-	symProcFunc, err := plug.Lookup(procFuncName)
-	if err != nil {
-		fmt.Println(err)
-		os.Exit(1)
-	}
-
-	// Assert the symbol is the desired one
-	var procFunc func([]interface{}, *[]interface{}, *[]interface{}) error
-	procFunc, ok := symProcFunc.(func([]interface{}, *[]interface{}, *[]interface{}) error)
-	if !ok {
-		fmt.Println("unexpected type from module symbol")
-		os.Exit(1)
-	}
-
-	return procFunc
-}
-
-// // Sample Word Count
-// func processorFunc(tuple []interface{}, result *[]interface{}, variables *[]interface{}) error {
-// 	// Bolt's global variables
-// 	var countMap map[string]int
-// 	if (len(*variables) == 0) {
-// 		// Initialize varibales
-// 		countMap = make(map[string]int)
-// 		*variables = append(*variables, countMap)
-// 	} else {
-// 		countMap = (*variables)[0].(map[string]int)
-// 	}
-
-// 	// Bolt's process logic
-// 	word := tuple[0].(string)
-// 	count, ok := countMap[word]
-// 	if !ok {
-// 		count = 0
-// 	}
-// 	count++
-// 	countMap[word] = count
-// 	*result = []interface{}{word, count}
-
-// 	return nil
-// }
-
-// // Sample Multiply Two
-// func processorFunc(tuple []interface{}, result *[]interface{}, variables *[]interface{}) error {
-// 	num := tuple[0].(float64)
-// 	num *= 2
-// 	*result = []interface{}{num}
-
-// 	return nil
-// }
-
 
 func main() {
 	boltWorker_1 := NewBoltWorker(10, "ProcFunc", "5001", []string{"127.0.0.1:5000"}, "byFields", 0, "shuffle", 0)
