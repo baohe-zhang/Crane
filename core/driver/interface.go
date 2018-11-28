@@ -82,8 +82,6 @@ func (d *Driver) StartDaemon() {
 					topo := &topology.Topology{}
 					utils.Unmarshal(payload.Content, topo)
 					d.BuildTopology(topo)
-					d.PrintTopology("None", 0)
-					fmt.Println(" ")
 					/*for _, bolt := range content.Bolts {*/
 					//task := utils.BoltTaskMessage{
 					//BoltName:     bolt.Name,
@@ -119,43 +117,91 @@ func (d *Driver) StartDaemon() {
 // Build the graph topology using vector-edge map
 func (d *Driver) BuildTopology(topo *topology.Topology) {
 	d.TopologyGraph = make(map[string][]interface{})
-	for _, bolt := range topo.Bolts {
-		preVecs := bolt.PrevTaskNames
+	for i, _ := range topo.Bolts {
+		preVecs := topo.Bolts[i].PrevTaskNames
 		for _, vec := range preVecs {
 			if d.TopologyGraph[vec] == nil {
 				d.TopologyGraph[vec] = make([]interface{}, 0)
 			}
-			d.TopologyGraph[vec] = append(d.TopologyGraph[vec], &bolt)
+			d.TopologyGraph[vec] = append(d.TopologyGraph[vec], &topo.Bolts[i])
 		}
-		bolt.TaskAddrs = make([]string, 0)
+		topo.Bolts[i].TaskAddrs = make([]string, 0)
 	}
 
-	for _, spout := range topo.Spouts {
+	for i, _ := range topo.Spouts {
 		preVec := "None"
 		if d.TopologyGraph[preVec] == nil {
 			d.TopologyGraph[preVec] = make([]interface{}, 0)
 		}
-		d.TopologyGraph[preVec] = append(d.TopologyGraph[preVec], &spout)
-		spout.TaskAddrs = make([]string, 0)
+		d.TopologyGraph[preVec] = append(d.TopologyGraph[preVec], &topo.Spouts[i])
+		topo.Spouts[i].TaskAddrs = make([]string, 0)
 	}
 
 	visited := make(map[string]bool)
 	count := 0
 	addrs := make(map[int][]interface{})
 	d.GenTopologyMessages("None", &visited, &count, &addrs)
+	d.PrintTopology("None", 0)
+	fmt.Println(" ")
 	for id, tasks := range addrs {
 		targetId := d.SupervisorIdMap[uint32(id)]
-		for _, task := range tasks {
-			spout, ok := task.(utils.SpoutTaskMessage)
+		for offset, task := range tasks {
+			spout, ok := task.(*spout.SpoutInst)
 			if ok {
-				task := utils.SpoutTaskMessage{
+				msg := utils.SpoutTaskMessage{
 					Name:         spout.Name,
-					PrevBoltAddr: d.SpoutMap[spout.Name].TaskAddrs,
 					GroupingHint: spout.GroupingHint,
 					FieldIndex:   spout.FieldIndex,
+					PluginFile:   spout.PluginFile,
+					PluginSymbol: spout.PluginSymbol,
+					Port:         fmt.Sprintf("%d", utils.CONTRACTOR_BASE_PORT+offset),
+				}
+				b, _ := utils.Marshal(utils.SPOUT_TASK, msg)
+				d.Pub.PublishBoard <- messages.Message{
+					Payload:      b,
+					TargetConnId: targetId,
 				}
 			} else {
+				bolt, ok := task.(*bolt.BoltInst)
+				msg := utils.BoltTaskMessage{
+					Name:                 bolt.Name,
+					SuccBoltGroupingHint: bolt.GroupingHint,
+					SuccBoltFieldIndex:   bolt.FieldIndex,
+					PluginFile:           bolt.PluginFile,
+					PluginSymbol:         bolt.PluginSymbol,
+					Port:                 fmt.Sprintf("%d", utils.CONTRACTOR_BASE_PORT+offset),
+				}
 
+				_, ok = d.SpoutMap[bolt.PrevTaskNames[0]]
+				if ok {
+					prev := d.SpoutMap[bolt.PrevTaskNames[0]]
+					msg.PrevBoltGroupingHint = prev.GroupingHint
+					msg.PrevBoltFieldIndex = prev.FieldIndex
+				} else {
+					prev := d.BoltMap[bolt.PrevTaskNames[0]]
+					msg.PrevBoltGroupingHint = prev.GroupingHint
+					msg.PrevBoltFieldIndex = prev.FieldIndex
+				}
+
+				addr := make([]string, 0)
+				for _, name := range bolt.PrevTaskNames {
+					_, ok := d.SpoutMap[name]
+					if ok {
+						prev := d.SpoutMap[name]
+						addr = append(addr, prev.TaskAddrs...)
+					} else {
+						prev := d.BoltMap[name]
+						addr = append(addr, prev.TaskAddrs...)
+					}
+				}
+				msg.PrevBoltAddr = addr
+				fmt.Println(addr)
+
+				b, _ := utils.Marshal(utils.BOLT_TASK, msg)
+				d.Pub.PublishBoard <- messages.Message{
+					Payload:      b,
+					TargetConnId: targetId,
+				}
 			}
 		}
 	}
@@ -219,8 +265,6 @@ func (d *Driver) GenTopologyMessages(next string, visited *map[string]bool, coun
 
 // Output the topology in the std out
 func (d *Driver) PrintTopology(next string, level int) {
-	spoutMap := make(map[string]spout.SpoutInst)
-	boltMap := make(map[string]bolt.BoltInst)
 	if d.TopologyGraph == nil {
 		log.Println("No topology has been built")
 		return
@@ -236,12 +280,12 @@ func (d *Driver) PrintTopology(next string, level int) {
 		}
 		if next == "None" {
 			fmt.Printf("#%s ", vec.(*spout.SpoutInst).Name)
-			d.spoutMap[vec.(*spout.SpoutInst).Name] = (*vec.(*spout.SpoutInst))
+			d.SpoutMap[vec.(*spout.SpoutInst).Name] = (*vec.(*spout.SpoutInst))
 			fmt.Println(vec.(*spout.SpoutInst).TaskAddrs)
 			d.PrintTopology(vec.(*spout.SpoutInst).Name, level+1)
 		} else {
 			fmt.Printf("--- %s ", vec.(*bolt.BoltInst).Name)
-			d.boltMap[vec.(*bolt.BoltInst).Name] = (*vec.(*bolt.BoltInst))
+			d.BoltMap[vec.(*bolt.BoltInst).Name] = (*vec.(*bolt.BoltInst))
 			fmt.Println(vec.(*bolt.BoltInst).TaskAddrs)
 			d.PrintTopology(vec.(*bolt.BoltInst).Name, level+1)
 		}

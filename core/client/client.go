@@ -64,25 +64,14 @@ func main() {
 	}
 	tm := topology.Topology{}
 	tm.Bolts = make([]bolt.BoltInst, 0)
-	bm := bolt.BoltInst{
-		Name:          "wordcount",
-		InstNum:       4,
-		PrevTaskNames: []string{"wordgen", "wordgen2"},
-		GroupingHint:  utils.GROUPING_BY_SHUFFLE,
-		PluginFile:    "wordcount.so",
-		PluginSymbol:  "WordCountBolt",
-	}
-	tm.Bolts = append(tm.Bolts, bm)
-	bm2 := bolt.BoltInst{
-		Name:          "wordsplit",
-		InstNum:       4,
-		PrevTaskNames: []string{"wordgen", "wordgen2"},
-		GroupingHint:  utils.GROUPING_BY_FIELD,
-		FieldIndex:    0,
-		PluginFile:    "wordsplit.so",
-		PluginSymbol:  "WordSplitBolt",
-	}
-	tm.Bolts = append(tm.Bolts, bm2)
+	bm := bolt.NewBoltInst("wordcount", "wordcount.so", "WordCountBolt", utils.GROUPING_BY_SHUFFLE, 0)
+	bm.SetInstanceNum(4)
+	bm.AddPrevTaskName("wordgen")
+	bm2 := bolt.NewBoltInst("wordsplit", "wordsplit.so", "WordSplitBolt", utils.GROUPING_BY_FIELD, 0)
+	bm2.SetInstanceNum(4)
+	bm2.AddPrevTaskName("wordgen2")
+	tm.AddBolt(bm)
+	tm.AddBolt(bm2)
 	sp := spout.NewSpoutInst("wordgen", "wordgen.so", "WordGen", utils.GROUPING_BY_SHUFFLE, 0)
 	sp2 := spout.NewSpoutInst("wordgen2", "wordgen.so", "WordGen", utils.GROUPING_BY_SHUFFLE, 0)
 	sp.SetInstanceNum(3)

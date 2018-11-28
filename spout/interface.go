@@ -1,4 +1,4 @@
-package main
+package spout
 
 type SpoutInst struct {
 	Name         string
