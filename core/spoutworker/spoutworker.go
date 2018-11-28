@@ -7,6 +7,7 @@ import (
 	"encoding/json"
 	"net"
 	"crane/core/messages"
+	"crane/core/utils"
 )
 
 const (
@@ -27,8 +28,8 @@ type SpoutWorker struct {
 	wg sync.WaitGroup
 }
 
-func NewSpoutWorker(procFuncName string, port string, sucGrouping string, sucField int) *SpoutWorker {
-	procFunc := lookupProcFunc(procFuncName)
+func NewSpoutWorker(pluginFilename string, procFuncName string, port string, sucGrouping string, sucField int) *SpoutWorker {
+	procFunc := utils.LookupProcFunc(pluginFilename, procFuncName)
 
 	tuples := make(chan []interface{}, BUFLEN)
 	variables := make([]interface{}, 0) // Store spout's global variables
@@ -106,7 +107,7 @@ func (sw *SpoutWorker) outputTuple() {
 	case "byFields":
 		for tuple := range sw.tuples {
 			bin, _ := json.Marshal(tuple)
-			sucid := hash(tuple[sw.sucField]) % len(sw.sucIndexMap)
+			sucid := utils.Hash(tuple[sw.sucField]) % len(sw.sucIndexMap)
 			sw.rwmutex.RLock()
 			sucConnId := sw.sucIndexMap[sucid]
 			sw.rwmutex.RUnlock()

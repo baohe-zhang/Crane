@@ -7,6 +7,7 @@ import (
 	"encoding/json"
 	"net"
 	"crane/core/messages"
+	"crane/core/utils"
 )
 
 const (
@@ -41,14 +42,14 @@ type Executor struct {
 	variables []interface{}
 }
 
-func NewBoltWorker(numWorkers int, procFuncName string, port string, subAddrs []string, 
+func NewBoltWorker(numWorkers int, pluginFilename string, procFuncName string, port string, subAddrs []string, 
 					preGrouping string, preField int, 
 					sucGrouping string, sucField int) *BoltWorker {
 	tuples := make(chan []interface{}, BUFLEN)
 	results := make(chan []interface{}, BUFLEN)
 
 	// Lookup ProcFunc
-	procFunc := lookupProcFunc(procFuncName)
+	procFunc := utils.LookupProcFunc(pluginFilename, procFuncName)
 
 	// Create executors
 	executors := make([]*Executor, 0)
@@ -197,7 +198,7 @@ func (bw *BoltWorker) outputTuple() {
 	case "byFields":
 		for result := range bw.results {
 			bin, _ := json.Marshal(result)
-			sucid := hash(result[bw.sucField]) % len(bw.sucIndexMap)
+			sucid := utils.Hash(result[bw.sucField]) % len(bw.sucIndexMap)
 			bw.rwmutex.RLock()
 			sucConnId := bw.sucIndexMap[sucid]
 			bw.rwmutex.RUnlock()
