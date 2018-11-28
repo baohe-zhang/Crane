@@ -26,27 +26,24 @@ func NewSupervisor(driverAddr string) *Supervisor {
 	if supervisor.Sub == nil {
 		return nil
 	}
+	s.BoltWorkers = make([]*boltworker.BoltWorker, 0)
+	s.SpoutWorkers = make([]*spoutworker.SpoutWorker, 0)
 	supervisor.VmIndexMap = make(map[int]string)
 	return supervisor
 }
 
 // Daemon function for supervisor service
 func (s *Supervisor) StartDaemon() {
-	s.BoltWorkers = make([]*boltworker.BoltWorker, 0)
-	s.SpoutWorkers = make([]*spoutworker.SpoutWorker, 0)
-
 	go s.Sub.RequestMessage()
 	go s.Sub.ReadMessage()
 	s.SendJoinRequest()
 
 	for rcvMsg := range s.Sub.PublishBoard {
-		fmt.Println("yes")
 		log.Printf("Receive Message from %s: %s\n", rcvMsg.SourceConnId, rcvMsg.Payload)
 		payload := utils.CheckType(rcvMsg.Payload)
 
 		switch payload.Header.Type {
 		case utils.BOLT_TASK:
-			fmt.Println("1")
 			task := &utils.BoltTaskMessage{}
 			utils.Unmarshal(payload.Content, task)
 			bw := boltworker.NewBoltWorker(10, task.PluginFile, task.Name, task.Port, task.PrevBoltAddr,
@@ -56,7 +53,6 @@ func (s *Supervisor) StartDaemon() {
 			log.Printf("Receive Bolt Dispatch %s Previous workers %v\n", task.Name, task.PrevBoltAddr)
 
 		case utils.SPOUT_TASK:
-			fmt.Println("2")
 			task := &utils.SpoutTaskMessage{}
 			utils.Unmarshal(payload.Content, task)
 			sw := spoutworker.NewSpoutWorker(task.PluginFile, task.Name, task.Port, task.GroupingHint, task.FieldIndex)
@@ -64,7 +60,6 @@ func (s *Supervisor) StartDaemon() {
 			log.Printf("Receive Spout Dispatch %s \n", task.Name)
 
 		case utils.TASK_ALL_DISPATCHED:
-			fmt.Println("3")
 			for _, sw := range s.SpoutWorkers {
 				go sw.Start()
 			}
