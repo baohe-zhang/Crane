@@ -61,6 +61,12 @@ func (s *Supervisor) StartDaemon() {
 				log.Printf("Receive Spout Dispatch %s \n", task.Name)
 
 			case utils.TASK_ALL_DISPATCHED:
+				for _, sw := range s.SpoutWorkers {
+					go sw.Start()
+				}
+				for _, bw := range s.BoltWorkers {
+					go bw.Start()
+				}
 
 			}
 
