@@ -11,6 +11,7 @@ import (
 	"log"
 	"net"
 	"sync"
+	"time"
 )
 
 const ()
@@ -82,30 +83,6 @@ func (d *Driver) StartDaemon() {
 					topo := &topology.Topology{}
 					utils.Unmarshal(payload.Content, topo)
 					d.BuildTopology(topo)
-					/*for _, bolt := range content.Bolts {*/
-					//task := utils.BoltTaskMessage{
-					//BoltName:     bolt.Name,
-					//PrevBoltAddr: make([]string, 0),
-					//GroupingHint: bolt.GroupingHint,
-					//FieldIndex:   bolt.FieldIndex,
-					//}
-					//b, _ := utils.Marshal(utils.BOLT_DISPATCH, task)
-					//for i := 0; i < bolt.InstNum; i++ {
-					//id := i
-					//if i >= len(d.SupervisorIdMap) && i != 0 {
-					//id = i % len(d.SupervisorIdMap)
-					//} else if len(d.SupervisorIdMap) == 0 {
-					//log.Println("No nodes inside the cluster")
-					//break
-					//}
-					//targetId := d.SupervisorIdMap[uint32(id)]
-					//log.Println("ConnId Target:", id, uint32(id), targetId)
-					//d.Pub.PublishBoard <- messages.Message{
-					//Payload:      b,
-					//TargetConnId: targetId,
-					//}
-					//}
-					/*}*/
 				}
 			default:
 			}
@@ -203,6 +180,17 @@ func (d *Driver) BuildTopology(topo *topology.Topology) {
 					TargetConnId: targetId,
 				}
 			}
+		}
+	}
+
+	time.Sleep(2 * time.Second)
+
+	for id, _ := range addrs {
+		targetId := d.SupervisorIdMap[uint32(id)]
+		b, _ := utils.Marshal(utils.TASK_ALL_DISPATCHED, "ok")
+		d.Pub.PublishBoard <- messages.Message{
+			Payload:      b,
+			TargetConnId: targetId,
 		}
 	}
 }

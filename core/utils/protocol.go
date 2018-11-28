@@ -10,6 +10,7 @@ const (
 	TOPO_SUBMISSION_RES = "topo_submission_response"
 	BOLT_TASK           = "bolt_task"
 	SPOUT_TASK          = "spout_task"
+	TASK_ALL_DISPATCHED = "task_all_dispatched"
 	CONN_NOTIFY         = "conn_notify"
 	GROUPING_BY_FIELD   = "grouping_by_field"
 	GROUPING_BY_SHUFFLE = "grouping_by_shuffle"

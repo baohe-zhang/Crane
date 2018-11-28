@@ -59,7 +59,9 @@ func (s *Supervisor) StartDaemon() {
 				sw := spoutworker.NewSpoutWorker(task.PluginFile, task.Name, task.Port, task.GroupingHint, task.FieldIndex)
 				s.SpoutWorkers = append(s.SpoutWorkers, sw)
 				log.Printf("Receive Spout Dispatch %s \n", task.Name)
-				
+
+			case utils.TASK_ALL_DISPATCHED:
+
 			}
 
 		default:
