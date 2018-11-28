@@ -12,6 +12,9 @@ const (
 	CONN_NOTIFY         = "conn_notify"
 	GROUPING_BY_FIELD   = "grouping_by_field"
 	GROUPING_BY_SHUFFLE = "grouping_by_shuffle"
+
+	CONTRACTOR_BASE_PORT = 6000
+	DRIVER_PORT          = 5005
 )
 
 type PayloadHeader struct {
@@ -33,6 +36,15 @@ type BoltTaskMessage struct {
 	PrevBoltAddr         []string
 	PrevBoltGroupingHind string
 	PrevBoltFieldIndex   int
+	SuccBoltGroupingHint string
+	SuccBoltFieldIndex   int
+	PluginFile           string
+	PluginSymbol         string
+}
+
+type SpoutTaskMessage struct {
+	Name                 string
+	Port                 string
 	SuccBoltGroupingHint string
 	SuccBoltFieldIndex   int
 	PluginFile           string
