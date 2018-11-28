@@ -1,4 +1,4 @@
-package main 
+package spoutworker 
 
 import (
 	"fmt"
@@ -7,7 +7,6 @@ import (
 	"encoding/json"
 	"net"
 	"crane/core/messages"
-	"crane/core/boltworker"
 )
 
 const (
@@ -139,11 +138,11 @@ func (sw *SpoutWorker) buildSucIndexMap() {
 }
 
 
-func main() {
-	spoutWorker := NewSpoutWorker("NextTuple", "5000", "byFields", 0)
-	go spoutWorker.Start()
+// func main() {
+// 	spoutWorker := NewSpoutWorker("NextTuple", "5000", "byFields", 0)
+// 	go spoutWorker.Start()
 
-	var wg sync.WaitGroup
-	wg.Add(1)
-	wg.Wait()
-}
+// 	var wg sync.WaitGroup
+// 	wg.Add(1)
+// 	wg.Wait()
+// }
