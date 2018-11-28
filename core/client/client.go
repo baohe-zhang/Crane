@@ -63,7 +63,6 @@ func main() {
 		return
 	}
 	tm := topology.Topology{}
-	tm.Bolts = make([]bolt.BoltInst, 0)
 	bm := bolt.NewBoltInst("wordcount", "wordcount.so", "WordCountBolt", utils.GROUPING_BY_SHUFFLE, 0)
 	bm.SetInstanceNum(4)
 	bm.AddPrevTaskName("wordgen")
