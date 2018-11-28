@@ -62,21 +62,36 @@ func main() {
 		log.Println("Initialize client failed")
 		return
 	}
+	// Create a topology
 	tm := topology.Topology{}
-	bm := bolt.NewBoltInst("wordcount", "wordcount.so", "WordCountBolt", utils.GROUPING_BY_SHUFFLE, 0)
-	bm.SetInstanceNum(4)
-	bm.AddPrevTaskName("wordgen")
-	/*bm2 := bolt.NewBoltInst("wordsplit", "wordsplit.so", "WordSplitBolt", utils.GROUPING_BY_FIELD, 0)*/
-	//bm2.SetInstanceNum(4)
-	/*bm2.AddPrevTaskName("wordgen2")*/
-	tm.AddBolt(bm)
-	//tm.AddBolt(bm2)
-	sp := spout.NewSpoutInst("wordgen", "wordgen.so", "WordGen", utils.GROUPING_BY_SHUFFLE, 0)
-	//sp2 := spout.NewSpoutInst("wordgen2", "wordgen.so", "WordGen", utils.GROUPING_BY_SHUFFLE, 0)
-	sp.SetInstanceNum(3)
-	//sp2.SetInstanceNum(3)
+
+	// Create a spout
+	sp := spout.NewSpoutInst("NextTuple", "../process/process.so", "NextTuple", utils.GROUPING_BY_FIELD, 0)
+	sp.SetInstanceNum(1)
 	tm.AddSpout(sp)
-	//tm.AddSpout(sp2)
+
+	// Create a bolt
+	// Params: name, pluginFile, pluginSymbol, groupingHint, fieldIndex
+	bm := bolt.NewBoltInst("ProcFunc", "../process/process.so", "ProcFunc", utils.GROUPING_BY_ALL, 0)
+	bm.SetInstanceNum(1)
+	bm.AddPrevTaskName("NextTuple")
+	tm.AddBolt(bm)
+
 	client.ContactDriver(tm)
 	client.Start()
+
+
+	// /*bm2 := bolt.NewBoltInst("wordsplit", "wordsplit.so", "WordSplitBolt", utils.GROUPING_BY_FIELD, 0)*/
+	// //bm2.SetInstanceNum(4)
+	// /*bm2.AddPrevTaskName("wordgen2")*/
+	// tm.AddBolt(bm)
+	// //tm.AddBolt(bm2)
+	// sp := spout.NewSpoutInst("wordgen", "wordgen.so", "WordGen", utils.GROUPING_BY_SHUFFLE, 0)
+	// //sp2 := spout.NewSpoutInst("wordgen2", "wordgen.so", "WordGen", utils.GROUPING_BY_SHUFFLE, 0)
+	// sp.SetInstanceNum(3)
+	// //sp2.SetInstanceNum(3)
+	// tm.AddSpout(sp)
+	// //tm.AddSpout(sp2)
+	// client.ContactDriver(tm)
+	// client.Start()
 }
