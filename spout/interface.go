@@ -8,6 +8,7 @@ type SpoutInst struct {
 	GroupingHint string
 	FieldIndex   int
 	InstNum      int
+	TaskAddrs    []string
 }
 
 func NewSpoutInst(name, pluginFile, pluginSymbol string, grouping string, mainField int) *SpoutInst {
@@ -18,6 +19,7 @@ func NewSpoutInst(name, pluginFile, pluginSymbol string, grouping string, mainFi
 	spoutInst.GroupingHint = grouping
 	spoutInst.FieldIndex = mainField
 	spoutInst.InstNum = 1
+	spoutInst.TaskAddrs = make([]string, 0)
 	return spoutInst
 }
 

@@ -6,6 +6,7 @@ import (
 	"crane/core/utils"
 	"crane/spout"
 	"crane/topology"
+	"fmt"
 	"log"
 )
 
@@ -56,7 +57,7 @@ func (c *Client) ContactDriver(topoMsg topology.Topology) {
 }
 
 func main() {
-	client := NewClient(":5001")
+	client := NewClient(":" + fmt.Sprintf("%d", utils.DRIVER_PORT))
 	if client == nil {
 		log.Println("Initialize client failed")
 		return

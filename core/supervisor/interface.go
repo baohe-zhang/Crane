@@ -3,7 +3,7 @@ package main
 import (
 	"crane/core/messages"
 	"crane/core/utils"
-	"crane/core/contractor"
+	"fmt"
 	"log"
 )
 
@@ -41,15 +41,8 @@ func (s *Supervisor) StartDaemon() {
 			case utils.BOLT_TASK:
 				task := &utils.BoltTaskMessage{}
 				utils.Unmarshal(payload.Content, task)
-				contra := contractor.NewContractor(10, task.Name, task.Port, task.PrevBoltAddr, 
-												task.PrevBoltGroupingHint, task.PrevBoltFieldIndex, 
-												task.SuccBoltGroupingHint, task.SuccBoltFieldIndex)
-				s.Contractors = append(s.Contractors, contra)
 
-			case utils.SBOLT_TASK:
-				task := 
-
-			// case utils.SEND_FINISHED:
+				log.Printf("Receive Bolt Dispatch %s\n", task.Name)
 			}
 
 		default:
@@ -72,7 +65,7 @@ func (s *Supervisor) SendJoinRequest() {
 }
 
 func main() {
-	supervisor := NewSupervisor(":5001")
+	supervisor := NewSupervisor(":" + fmt.Sprintf("%d", utils.DRIVER_PORT))
 	if supervisor == nil {
 		log.Println("Initialize supervisor failed")
 		return

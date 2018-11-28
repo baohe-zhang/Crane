@@ -8,10 +8,14 @@ const (
 	JOIN_REQUEST        = "join_reqeust"
 	TOPO_SUBMISSION     = "topo_submission"
 	TOPO_SUBMISSION_RES = "topo_submission_response"
-	BOLT_TASK       	= "bolt_task"
+	BOLT_TASK           = "bolt_task"
+	SPOUT_TASK          = "spout_task"
 	CONN_NOTIFY         = "conn_notify"
 	GROUPING_BY_FIELD   = "grouping_by_field"
 	GROUPING_BY_SHUFFLE = "grouping_by_shuffle"
+
+	CONTRACTOR_BASE_PORT = 6000
+	DRIVER_PORT          = 5005
 )
 
 type PayloadHeader struct {
@@ -31,7 +35,7 @@ type BoltTaskMessage struct {
 	Name                 string
 	Port                 string
 	PrevBoltAddr         []string
-	PrevBoltGroupingHind string
+	PrevBoltGroupingHint string
 	PrevBoltFieldIndex   int
 	SuccBoltGroupingHint string
 	SuccBoltFieldIndex   int
@@ -39,7 +43,14 @@ type BoltTaskMessage struct {
 	PluginSymbol         string
 }
 
-
+type SpoutTaskMessage struct {
+	Name         string
+	Port         string
+	GroupingHint string
+	FieldIndex   int
+	PluginFile   string
+	PluginSymbol string
+}
 
 func Marshal(contentType string, content interface{}) ([]byte, error) {
 	contentBytes, err := json.Marshal(content)
