@@ -16,6 +16,7 @@ type Supervisor struct {
 	Sub          *messages.Subscriber
 	BoltWorkers  []*boltworker.BoltWorker
 	SpoutWorkers []*spoutworker.SpoutWorker
+	VmIndexMap   []string
 }
 
 // Factory mode to return the Supervisor instance
@@ -25,6 +26,7 @@ func NewSupervisor(driverAddr string) *Supervisor {
 	if supervisor.Sub == nil {
 		return nil
 	}
+	supervisor.VmIndexMap = make([]string, 0)
 	return supervisor
 }
 
@@ -90,14 +92,35 @@ func (s *Supervisor) SendJoinRequest() {
 
 func main() {
 	driverIpPtr := flag.String("h", "127.0.0.1", "Driver's IP address")
+	vmIndexPtr := flag.Int("vm", 0, "VM index in cluster")
 	flag.Parse()
+	vms := utils.GetVmMap()
+	var ip string
+	if *vmIndexPtr <= 0 && *driverIpPtr == "127.0.0.1" {
+		ip = *driverIpPtr
+		log.Println("Enter Local Mode")
+	} else if *vmIndexPtr != 0 {
+		if *vmIndexPtr > 10 {
+			log.Fatal("VM Cluster Index out of range")
+			return
+		} else {
+			ip = vms[*vmIndexPtr]
+			log.Println("Enter Cluster mode")
+		}
+	} else {
+		ip = *driverIpPtr
+		log.Println("Enter Remote Mode")
+	}
+
 	LocalIP := utils.GetLocalIP().String()
 	LocalHostname := utils.GetLocalHostname()
 	log.Printf("Local Machine Info [%s] [%s]\n", LocalIP, LocalHostname)
-	supervisor := NewSupervisor(*driverIpPtr + ":" + fmt.Sprintf("%d", utils.DRIVER_PORT))
+
+	supervisor := NewSupervisor(ip + ":" + fmt.Sprintf("%d", utils.DRIVER_PORT))
 	if supervisor == nil {
 		log.Println("Initialize supervisor failed")
 		return
 	}
+	supervisor.VmIndexMap = vms
 	supervisor.StartDaemon()
 }

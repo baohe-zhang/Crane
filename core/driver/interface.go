@@ -25,6 +25,7 @@ type Driver struct {
 	TopologyGraph   map[string][]interface{}
 	SpoutMap        map[string]spout.SpoutInst
 	BoltMap         map[string]bolt.BoltInst
+	VmIndexMap      []string
 }
 
 // Factory mode to return the Driver instance
@@ -34,6 +35,7 @@ func NewDriver(addr string) *Driver {
 	driver.SupervisorIdMap = make([]string, 0)
 	driver.SpoutMap = make(map[string]spout.SpoutInst)
 	driver.BoltMap = make(map[string]bolt.BoltInst)
+	driver.VmIndexMap = make([]string, 0)
 	return driver
 }
 
@@ -295,5 +297,6 @@ func (d *Driver) Hashcode(id string) uint32 {
 
 func main() {
 	driver := NewDriver(":" + fmt.Sprintf("%d", utils.DRIVER_PORT))
+	driver.VmIndexMap = utils.GetVmMap()
 	driver.StartDaemon()
 }
