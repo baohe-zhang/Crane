@@ -102,7 +102,7 @@ func (bw *BoltWorker) Start() {
 	bw.publisher = messages.NewPublisher(":"+bw.port)
 	go bw.publisher.AcceptConns()
 	go bw.publisher.PublishMessage(bw.publisher.PublishBoard)
-	time.Sleep(4 * time.Second) // Wait for all boltWorkers' publisher established
+	time.Sleep(2 * time.Second) // Wait for all boltWorkers' publisher established
 	
 	// Start subscribers
 	for _, subAddr := range bw.subAddrs {

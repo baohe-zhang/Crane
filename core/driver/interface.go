@@ -123,6 +123,7 @@ func (d *Driver) BuildTopology(topo *topology.Topology) {
 	for id, tasks := range addrs {
 		targetId := d.SupervisorIdMap[uint32(id)]
 		for offset, task := range tasks {
+			time.Sleep(20 * time.Millisecond)
 			spout, ok := task.(*spout.SpoutInst)
 			if ok {
 				msg := utils.SpoutTaskMessage{

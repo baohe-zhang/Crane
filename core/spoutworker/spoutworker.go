@@ -64,7 +64,7 @@ func (sw *SpoutWorker) Start() {
 	sw.publisher = messages.NewPublisher(":"+sw.port)
 	go sw.publisher.AcceptConns()
 	go sw.publisher.PublishMessage(sw.publisher.PublishBoard)
-	time.Sleep(10 * time.Second) // Wait for all subscribers to join 
+	time.Sleep(4 * time.Second) // Wait for all subscribers to join 
 
 	sw.buildSucIndexMap()
 
