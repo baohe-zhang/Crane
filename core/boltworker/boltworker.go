@@ -257,41 +257,6 @@ func lookupProcFunc(procFuncName string) func([]interface{}, *[]interface{}, *[]
 	return procFunc
 }
 
-// // Sample Word Count
-// func processorFunc(tuple []interface{}, result *[]interface{}, variables *[]interface{}) error {
-// 	// Bolt's global variables
-// 	var countMap map[string]int
-// 	if (len(*variables) == 0) {
-// 		// Initialize varibales
-// 		countMap = make(map[string]int)
-// 		*variables = append(*variables, countMap)
-// 	} else {
-// 		countMap = (*variables)[0].(map[string]int)
-// 	}
-
-// 	// Bolt's process logic
-// 	word := tuple[0].(string)
-// 	count, ok := countMap[word]
-// 	if !ok {
-// 		count = 0
-// 	}
-// 	count++
-// 	countMap[word] = count
-// 	*result = []interface{}{word, count}
-
-// 	return nil
-// }
-
-// // Sample Multiply Two
-// func processorFunc(tuple []interface{}, result *[]interface{}, variables *[]interface{}) error {
-// 	num := tuple[0].(float64)
-// 	num *= 2
-// 	*result = []interface{}{num}
-
-// 	return nil
-// }
-
-
 func main() {
 	boltWorker_1 := NewBoltWorker(10, "ProcFunc", "5001", []string{"127.0.0.1:5000"}, "byFields", 0, "shuffle", 0)
 	boltWorker_2 := NewBoltWorker(10, "ProcFunc", "5002", []string{"127.0.0.1:5001"}, "byFields", 0, "shuffle", 0)
