@@ -64,7 +64,7 @@ func (sw *SpoutWorker) Start() {
 	sw.publisher = messages.NewPublisher(":"+sw.port)
 	go sw.publisher.AcceptConns()
 	go sw.publisher.PublishMessage(sw.publisher.PublishBoard)
-	time.Sleep(10 * time.Second) // Wait for all subscribers to join 
+	time.Sleep(4 * time.Second) // Wait for all subscribers to join 
 
 	sw.buildSucIndexMap()
 
@@ -83,14 +83,14 @@ func (sw *SpoutWorker) receiveTuple() {
 		err :=  sw.procFunc(empty, &tuple, &sw.variables)
 		if (err != nil) {
 			continue
-		} 
+		}
 		sw.tuples <- tuple
 	}	
 }
 
 func (sw *SpoutWorker) outputTuple() {
 	switch sw.sucGrouping {
-	case "shuffle":
+	case utils.GROUPING_BY_SHUFFLE:
 		count := 0
 		for tuple := range sw.tuples {
 			bin, _ := json.Marshal(tuple)
@@ -104,7 +104,7 @@ func (sw *SpoutWorker) outputTuple() {
 			}
 			count++
 		}
-	case "byFields":
+	case utils.GROUPING_BY_FIELD:
 		for tuple := range sw.tuples {
 			bin, _ := json.Marshal(tuple)
 			sucid := utils.Hash(tuple[sw.sucField]) % len(sw.sucIndexMap)
@@ -116,7 +116,7 @@ func (sw *SpoutWorker) outputTuple() {
 				TargetConnId: sucConnId,
 			}
 		}
-	case "all":
+	case utils.GROUPING_BY_ALL:
 		for tuple := range sw.tuples {
 			bin, _ := json.Marshal(tuple)
 			sw.publisher.Pool.Range(func(id string, conn net.Conn) {

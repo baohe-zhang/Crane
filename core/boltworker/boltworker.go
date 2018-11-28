@@ -96,7 +96,7 @@ func (bw *BoltWorker) Start() {
 	defer close(bw.tuples)
 	defer close(bw.results)
 
-	fmt.Println("boltWorker start")
+	fmt.Printf("bolt worker %s start\n", bw.ProcFuncName)
 
 	// Start publisher
 	bw.publisher = messages.NewPublisher(":"+bw.port)
@@ -135,8 +135,9 @@ func (bw *BoltWorker) receiveTuple() {
 }
 
 func (bw *BoltWorker) distributeTuple() {
-	switch bw.preGrouping {
-	case "shuffle":
+	// TODO: only need group by field
+	switch bw.preGrouping = utils.GROUPING_BY_FIELD; bw.preGrouping {
+	case utils.GROUPING_BY_SHUFFLE:
 		for tuple := range bw.tuples {
 			processed := false
 			for !processed {
@@ -150,7 +151,7 @@ func (bw *BoltWorker) distributeTuple() {
 				}
 			}
 		}
-	case "byFields":
+	case utils.GROUPING_BY_FIELD:
 		for tuple := range bw.tuples {
 			execid := utils.Hash(tuple[bw.preField]) % bw.numWorkers
 			executor := bw.executors[execid]
@@ -181,7 +182,7 @@ func (e *Executor) processTuple(tuple []interface{}) {
 
 func (bw *BoltWorker) outputTuple() {
 	switch bw.sucGrouping {
-	case "shuffle":
+	case utils.GROUPING_BY_SHUFFLE:
 		count := 0
 		for result := range bw.results {
 			bin, _ := json.Marshal(result)
@@ -195,7 +196,7 @@ func (bw *BoltWorker) outputTuple() {
 			}
 			count++
 		}
-	case "byFields":
+	case utils.GROUPING_BY_FIELD:
 		for result := range bw.results {
 			bin, _ := json.Marshal(result)
 			sucid := utils.Hash(result[bw.sucField]) % len(bw.sucIndexMap)
@@ -207,7 +208,7 @@ func (bw *BoltWorker) outputTuple() {
 				TargetConnId: sucConnId,
 			}
 		}
-	case "all":
+	case utils.GROUPING_BY_ALL:
 		for result := range bw.results {
 			bin, _ := json.Marshal(result)
 			bw.publisher.Pool.Range(func(id string, conn net.Conn) {

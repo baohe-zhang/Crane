@@ -14,6 +14,7 @@ const (
 	CONN_NOTIFY         = "conn_notify"
 	GROUPING_BY_FIELD   = "grouping_by_field"
 	GROUPING_BY_SHUFFLE = "grouping_by_shuffle"
+	GROUPING_BY_ALL     = "grouping_by_all"
 
 	CONTRACTOR_BASE_PORT = 6000
 	DRIVER_PORT          = 5005
