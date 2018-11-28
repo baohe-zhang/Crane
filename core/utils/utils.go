@@ -92,12 +92,12 @@ func GetLocalHostname() string {
 }
 
 // Get VM Index to IP mapping
-func GetVmMap() []string {
-	res := make([]string, 0)
+func GetVmMap() map[int]string {
+	res := make(map[int]string, 0)
 	for i := 1; i <= 10; i++ {
 		host := fmt.Sprintf("fa18-cs425-g29-%.2d.cs.illinois.edu", i)
 		addr := LookupIP(host)
-		res = append(res, addr)
+		res[i] = addr
 	}
 	return res
 }

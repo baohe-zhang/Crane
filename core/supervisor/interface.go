@@ -16,7 +16,7 @@ type Supervisor struct {
 	Sub          *messages.Subscriber
 	BoltWorkers  []*boltworker.BoltWorker
 	SpoutWorkers []*spoutworker.SpoutWorker
-	VmIndexMap   []string
+	VmIndexMap   map[int]string
 }
 
 // Factory mode to return the Supervisor instance
@@ -26,8 +26,7 @@ func NewSupervisor(driverAddr string) *Supervisor {
 	if supervisor.Sub == nil {
 		return nil
 	}
-	supervisor.VmIndexMap = make([]string, 0)
-	supervisor.VmIndexMap = append(supervisor.VmIndexMap, "127.0.0.1")
+	supervisor.VmIndexMap = make(map[int]string)
 	return supervisor
 }
 
