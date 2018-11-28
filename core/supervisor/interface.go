@@ -34,10 +34,14 @@ func (s *Supervisor) StartDaemon() {
 			log.Printf("Receive Message from %s: %s\n", rcvMsg.SourceConnId, rcvMsg.Payload)
 			payload := utils.CheckType(rcvMsg.Payload)
 			switch payload.Header.Type {
-			case utils.BOLT_DISPATCH:
+			case utils.BOLT_TASK:
 				task := &utils.BoltTaskMessage{}
 				utils.Unmarshal(payload.Content, task)
-				log.Printf("Receive Bolt Dispatch %s\n", task.Name)
+				log.Printf("Receive Bolt Dispatch %s Previous workers\n", task.Name, task.PrevBoltAddr)
+			case utils.SPOUT_TASK:
+				task := &utils.SpoutTaskMessage{}
+				utils.Unmarshal(payload.Content, task)
+				log.Printf("Receive Bolt Dispatch %s \n", task.Name)
 			}
 		default:
 
