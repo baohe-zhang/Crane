@@ -52,7 +52,7 @@ func (s *Supervisor) StartDaemon() {
 				task := &utils.BoltTaskMessage{}
 				utils.Unmarshal(payload.Content, task)
 				if task.PluginFile != "None" {
-					s.GetFile(task.PluginFile)
+					// s.GetFile(task.PluginFile)
 				}
 				bw := boltworker.NewBoltWorker(10, "./"+task.PluginFile, task.Name, task.Port, task.PrevBoltAddr,
 					task.PrevBoltGroupingHint, task.PrevBoltFieldIndex,
@@ -65,7 +65,7 @@ func (s *Supervisor) StartDaemon() {
 				task := &utils.SpoutTaskMessage{}
 				utils.Unmarshal(payload.Content, task)
 				if task.PluginFile != "None" {
-					s.GetFile(task.PluginFile)
+					// s.GetFile(task.PluginFile)
 				}
 				sw := spoutworker.NewSpoutWorker("./"+task.PluginFile, task.Name, task.Port, task.GroupingHint, task.FieldIndex)
 				s.SpoutWorkers = append(s.SpoutWorkers, sw)
