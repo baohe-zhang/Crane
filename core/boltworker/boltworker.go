@@ -174,7 +174,7 @@ func (e *Executor) processTuple(tuple []interface{}) {
 	// fmt.Printf("executor (%d) process tuple (%v)\n", e.id, tuple)
 	var result []interface{}
 	e.procFunc(tuple, &result, &e.variables)
-	fmt.Printf("executor %d output tuple (%v)\n", e.id, result)
+	// fmt.Printf("executor %d output tuple (%v)\n", e.id, result)
 	e.results <- result
 
 	e.available = true
