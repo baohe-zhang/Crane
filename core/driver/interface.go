@@ -138,7 +138,7 @@ func (d *Driver) BuildTopology(topo *topology.Topology) {
 					PluginSymbol: spout.PluginSymbol,
 					Port:         fmt.Sprintf("%d", utils.CONTRACTOR_BASE_PORT+offset),
 				}
-				fmt.Println(msg.Name, msg.Port)
+				fmt.Println(msg)
 				b, _ := utils.Marshal(utils.SPOUT_TASK, msg)
 				d.Pub.PublishBoard <- messages.Message{
 					Payload:      b,
@@ -155,7 +155,6 @@ func (d *Driver) BuildTopology(topo *topology.Topology) {
 					Port:                 fmt.Sprintf("%d", utils.CONTRACTOR_BASE_PORT+offset),
 				}
 
-				fmt.Println(msg.Name, msg.Port)
 				_, ok = d.SpoutMap[bolt.PrevTaskNames[0]]
 				if ok {
 					prev := d.SpoutMap[bolt.PrevTaskNames[0]]
@@ -179,7 +178,7 @@ func (d *Driver) BuildTopology(topo *topology.Topology) {
 					}
 				}
 				msg.PrevBoltAddr = addr
-				fmt.Println(addr)
+				fmt.Println(msg)
 
 				b, _ := utils.Marshal(utils.BOLT_TASK, msg)
 				d.Pub.PublishBoard <- messages.Message{
