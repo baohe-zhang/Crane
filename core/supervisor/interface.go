@@ -19,6 +19,7 @@ type Supervisor struct {
 	BoltWorkers  []*boltworker.BoltWorker
 	SpoutWorkers []*spoutworker.SpoutWorker
 	VmIndexMap   map[int]string
+	FilePathMap  map[string]string
 }
 
 // Factory mode to return the Supervisor instance
@@ -31,6 +32,7 @@ func NewSupervisor(driverAddr string) *Supervisor {
 	supervisor.BoltWorkers = make([]*boltworker.BoltWorker, 0)
 	supervisor.SpoutWorkers = make([]*spoutworker.SpoutWorker, 0)
 	supervisor.VmIndexMap = make(map[int]string)
+	supervisor.FilePathMap = make(map[string]string)
 	return supervisor
 }
 
@@ -95,6 +97,11 @@ func (s *Supervisor) SendJoinRequest() {
 
 // Get the plugin file from distributed file system
 func (s *Supervisor) GetFile(remoteName string) {
+	_, ok := s.FilePathMap[remoteName]
+	if ok {
+		return
+	}
+
 	usr, _ := user.Current()
 	usrHome := usr.HomeDir
 	cmd := exec.Command(usrHome+"/go/src/crane/tools/sdfs_client/sdfs_client", "-master", "fa18-cs425-g29-01.cs.illinois.edu:5000", "get", remoteName, "./"+remoteName)
@@ -103,6 +110,7 @@ func (s *Supervisor) GetFile(remoteName string) {
 		log.Fatal(err)
 	}
 	fmt.Printf("%s\n", stdoutStderr)
+	s.FilePathMap[remoteName] = "./" + remoteName
 }
 
 func main() {
