@@ -43,7 +43,6 @@ func (s *Supervisor) StartDaemon() {
 	s.SendJoinRequest()
 
 	for rcvMsg := range s.Sub.PublishBoard {
-		log.Printf("Receive Message from %s: %s\n", rcvMsg.SourceConnId, rcvMsg.Payload)
 		payload := utils.CheckType(rcvMsg.Payload)
 
 		switch payload.Header.Type {
@@ -57,7 +56,7 @@ func (s *Supervisor) StartDaemon() {
 				task.PrevBoltGroupingHint, task.PrevBoltFieldIndex,
 				task.SuccBoltGroupingHint, task.SuccBoltFieldIndex)
 			s.BoltWorkers = append(s.BoltWorkers, bw)
-			log.Printf("Receive Bolt Dispatch %s Previous workers %v\n", task.Name, task.PrevBoltAddr)
+			log.Printf("Receive Bolt Dispatch [%s, %s] Previous workers %v\n", task.Name, task.Port, task.PrevBoltAddr)
 
 		case utils.SPOUT_TASK:
 			task := &utils.SpoutTaskMessage{}
@@ -67,7 +66,7 @@ func (s *Supervisor) StartDaemon() {
 			}
 			sw := spoutworker.NewSpoutWorker("./"+task.PluginFile, task.Name, task.Port, task.GroupingHint, task.FieldIndex)
 			s.SpoutWorkers = append(s.SpoutWorkers, sw)
-			log.Printf("Receive Spout Dispatch %s \n", task.Name)
+			log.Printf("Receive Spout Dispatch [%s, %s] \n", task.Name, task.Port)
 
 		case utils.TASK_ALL_DISPATCHED:
 			for _, sw := range s.SpoutWorkers {
