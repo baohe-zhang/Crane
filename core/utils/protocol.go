@@ -6,6 +6,7 @@ import (
 
 const (
 	JOIN_REQUEST        = "join_reqeust"
+	FILE_PULL           = "file_pull"
 	TOPO_SUBMISSION     = "topo_submission"
 	TOPO_SUBMISSION_RES = "topo_submission_response"
 	BOLT_TASK           = "bolt_task"
@@ -31,6 +32,10 @@ type PayloadMessage struct {
 
 type JoinRequest struct {
 	Name string
+}
+
+type FilePull struct {
+	Filename string
 }
 
 type BoltTaskMessage struct {
