@@ -189,7 +189,7 @@ func (d *Driver) BuildTopology(topo *topology.Topology) {
 		}
 	}
 
-	time.Sleep(15 * time.Second)
+	time.Sleep(5 * time.Second)
 
 	for id, _ := range addrs {
 		targetId := d.SupervisorIdMap[uint32(id)]
