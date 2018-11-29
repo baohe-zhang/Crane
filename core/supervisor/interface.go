@@ -42,42 +42,85 @@ func (s *Supervisor) StartDaemon() {
 	go s.Sub.ReadMessage()
 	s.SendJoinRequest()
 
-	for rcvMsg := range s.Sub.PublishBoard {
-		payload := utils.CheckType(rcvMsg.Payload)
+	for {
+		select {
+			case rcvMsg := <-s.Sub.PublishBoard:
+			payload := utils.CheckType(rcvMsg.Payload)
 
-		switch payload.Header.Type {
-		case utils.BOLT_TASK:
-			task := &utils.BoltTaskMessage{}
-			utils.Unmarshal(payload.Content, task)
-			if task.PluginFile != "None" {
-				s.GetFile(task.PluginFile)
-			}
-			bw := boltworker.NewBoltWorker(10, "./"+task.PluginFile, task.Name, task.Port, task.PrevBoltAddr,
-				task.PrevBoltGroupingHint, task.PrevBoltFieldIndex,
-				task.SuccBoltGroupingHint, task.SuccBoltFieldIndex)
-			s.BoltWorkers = append(s.BoltWorkers, bw)
-			log.Printf("Receive Bolt Dispatch [%s, %s] Previous workers %v\n", task.Name, task.Port, task.PrevBoltAddr)
+			switch payload.Header.Type {
+			case utils.BOLT_TASK:
+				task := &utils.BoltTaskMessage{}
+				utils.Unmarshal(payload.Content, task)
+				if task.PluginFile != "None" {
+					s.GetFile(task.PluginFile)
+				}
+				bw := boltworker.NewBoltWorker(10, "./"+task.PluginFile, task.Name, task.Port, task.PrevBoltAddr,
+					task.PrevBoltGroupingHint, task.PrevBoltFieldIndex,
+					task.SuccBoltGroupingHint, task.SuccBoltFieldIndex)
+				s.BoltWorkers = append(s.BoltWorkers, bw)
+				log.Printf("Receive Bolt Dispatch %s Previous workers %v\n", task.Name, task.PrevBoltAddr)
+				log.Printf("Receive Message from %s: %v\n", rcvMsg.SourceConnId, task)
 
-		case utils.SPOUT_TASK:
-			task := &utils.SpoutTaskMessage{}
-			utils.Unmarshal(payload.Content, task)
-			if task.PluginFile != "None" {
-				s.GetFile(task.PluginFile)
-			}
-			sw := spoutworker.NewSpoutWorker("./"+task.PluginFile, task.Name, task.Port, task.GroupingHint, task.FieldIndex)
-			s.SpoutWorkers = append(s.SpoutWorkers, sw)
-			log.Printf("Receive Spout Dispatch [%s, %s] \n", task.Name, task.Port)
+			case utils.SPOUT_TASK:
+				task := &utils.SpoutTaskMessage{}
+				utils.Unmarshal(payload.Content, task)
+				if task.PluginFile != "None" {
+					s.GetFile(task.PluginFile)
+				}
+				sw := spoutworker.NewSpoutWorker("./"+task.PluginFile, task.Name, task.Port, task.GroupingHint, task.FieldIndex)
+				s.SpoutWorkers = append(s.SpoutWorkers, sw)
+				log.Printf("Receive Spout Dispatch %s \n", task.Name)
+				log.Printf("Receive Message from %s: %v\n", rcvMsg.SourceConnId, task)
 
-		case utils.TASK_ALL_DISPATCHED:
-			for _, sw := range s.SpoutWorkers {
-				go sw.Start()
+			case utils.TASK_ALL_DISPATCHED:
+				fmt.Printf("Finished receive Bolt and Spout Dispatchs\n")
+				for _, sw := range s.SpoutWorkers {
+					go sw.Start()
+				}
+				for _, bw := range s.BoltWorkers {
+					go bw.Start()
+				}
 			}
-			for _, bw := range s.BoltWorkers {
-				go bw.Start()
-			}
-
 		}
 	}
+
+	// for rcvMsg := range s.Sub.PublishBoard {
+	// 	log.Printf("Receive Message from %s: %s\n", rcvMsg.SourceConnId, rcvMsg.Payload)
+	// 	payload := utils.CheckType(rcvMsg.Payload)
+
+	// 	switch payload.Header.Type {
+	// 	case utils.BOLT_TASK:
+	// 		task := &utils.BoltTaskMessage{}
+	// 		utils.Unmarshal(payload.Content, task)
+	// 		if task.PluginFile != "None" {
+	// 			s.GetFile(task.PluginFile)
+	// 		}
+	// 		bw := boltworker.NewBoltWorker(10, "./"+task.PluginFile, task.Name, task.Port, task.PrevBoltAddr,
+	// 			task.PrevBoltGroupingHint, task.PrevBoltFieldIndex,
+	// 			task.SuccBoltGroupingHint, task.SuccBoltFieldIndex)
+	// 		s.BoltWorkers = append(s.BoltWorkers, bw)
+	// 		log.Printf("Receive Bolt Dispatch %s Previous workers %v\n", task.Name, task.PrevBoltAddr)
+
+	// 	case utils.SPOUT_TASK:
+	// 		task := &utils.SpoutTaskMessage{}
+	// 		utils.Unmarshal(payload.Content, task)
+	// 		if task.PluginFile != "None" {
+	// 			s.GetFile(task.PluginFile)
+	// 		}
+	// 		sw := spoutworker.NewSpoutWorker("./"+task.PluginFile, task.Name, task.Port, task.GroupingHint, task.FieldIndex)
+	// 		s.SpoutWorkers = append(s.SpoutWorkers, sw)
+	// 		log.Printf("Receive Spout Dispatch %s \n", task.Name)
+
+	// 	case utils.TASK_ALL_DISPATCHED:
+	// 		for _, sw := range s.SpoutWorkers {
+	// 			go sw.Start()
+	// 		}
+	// 		for _, bw := range s.BoltWorkers {
+	// 			go bw.Start()
+	// 		}
+
+	// 	}
+	// }
 }
 
 // Send join request to join the cluster
