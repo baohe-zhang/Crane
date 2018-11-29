@@ -49,6 +49,8 @@ func (s *Supervisor) StartDaemon() {
 			payload := utils.CheckType(rcvMsg.Payload)
 
 			switch payload.Header.Type {
+			case utils.FILE_PULL:
+
 			case utils.BOLT_TASK:
 				task := &utils.BoltTaskMessage{}
 				utils.Unmarshal(payload.Content, task)
