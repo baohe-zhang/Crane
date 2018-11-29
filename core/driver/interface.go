@@ -124,6 +124,20 @@ func (d *Driver) BuildTopology(topo *topology.Topology) {
 	d.GenTopologyMessages("None", &visited, &count, &addrs)
 	d.PrintTopology("None", 0)
 	fmt.Println(addrs)
+	// Stage 1 : Send pull request to supervisor to pull the file
+	for id, _ := range addrs {
+		targetId := d.SupervisorIdMap[uint32(id)]
+		msg := utils.FilePull{topo.Bolts[0].PluginFile}
+		b, _ := utils.Marshal(utils.FILE_PULL, msg)
+		d.Pub.PublishBoard <- messages.Message{
+			Payload:      b,
+			TargetConnId: targetId,
+		}
+	}
+
+	time.Sleep(20 * time.Second)
+
+	// Stage 2 : Send the task message information to supervisors
 	for id, tasks := range addrs {
 		targetId := d.SupervisorIdMap[uint32(id)]
 		for offset, task := range tasks {
@@ -191,6 +205,7 @@ func (d *Driver) BuildTopology(topo *topology.Topology) {
 
 	time.Sleep(5 * time.Second)
 
+	// Stage 3 : Send dispatch signal
 	for id, _ := range addrs {
 		targetId := d.SupervisorIdMap[uint32(id)]
 		b, _ := utils.Marshal(utils.TASK_ALL_DISPATCHED, "ok")

@@ -45,16 +45,21 @@ func (s *Supervisor) StartDaemon() {
 
 	for {
 		select {
-			case rcvMsg := <-s.Sub.PublishBoard:
+		case rcvMsg := <-s.Sub.PublishBoard:
 			payload := utils.CheckType(rcvMsg.Payload)
 
 			switch payload.Header.Type {
+			case utils.FILE_PULL:
+				filePull := &utils.FilePull{}
+				utils.Unmarshal(payload.Content, filePull)
+				if filePull.Filename != "None" {
+					s.GetFile(filePull.Filename)
+				}
+
 			case utils.BOLT_TASK:
 				task := &utils.BoltTaskMessage{}
 				utils.Unmarshal(payload.Content, task)
-				if task.PluginFile != "None" {
-					// go s.GetFile(task.PluginFile)
-				}
+
 				bw := boltworker.NewBoltWorker(10, "./"+task.PluginFile, task.Name, task.Port, task.PrevBoltAddr,
 					task.PrevBoltGroupingHint, task.PrevBoltFieldIndex,
 					task.SuccBoltGroupingHint, task.SuccBoltFieldIndex)
