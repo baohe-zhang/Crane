@@ -8,6 +8,8 @@ import (
 	"flag"
 	"fmt"
 	"log"
+	"os/exec"
+	"os/user"
 )
 
 // Supervisor, the slave node for accepting the schedule from the master node
@@ -46,7 +48,10 @@ func (s *Supervisor) StartDaemon() {
 		case utils.BOLT_TASK:
 			task := &utils.BoltTaskMessage{}
 			utils.Unmarshal(payload.Content, task)
-			bw := boltworker.NewBoltWorker(10, task.PluginFile, task.Name, task.Port, task.PrevBoltAddr,
+			if task.PluginFile != "None" {
+				s.GetFile(task.PluginFile)
+			}
+			bw := boltworker.NewBoltWorker(10, "./"+task.PluginFile, task.Name, task.Port, task.PrevBoltAddr,
 				task.PrevBoltGroupingHint, task.PrevBoltFieldIndex,
 				task.SuccBoltGroupingHint, task.SuccBoltFieldIndex)
 			s.BoltWorkers = append(s.BoltWorkers, bw)
@@ -55,7 +60,10 @@ func (s *Supervisor) StartDaemon() {
 		case utils.SPOUT_TASK:
 			task := &utils.SpoutTaskMessage{}
 			utils.Unmarshal(payload.Content, task)
-			sw := spoutworker.NewSpoutWorker(task.PluginFile, task.Name, task.Port, task.GroupingHint, task.FieldIndex)
+			if task.PluginFile != "None" {
+				s.GetFile(task.PluginFile)
+			}
+			sw := spoutworker.NewSpoutWorker("./"+task.PluginFile, task.Name, task.Port, task.GroupingHint, task.FieldIndex)
 			s.SpoutWorkers = append(s.SpoutWorkers, sw)
 			log.Printf("Receive Spout Dispatch %s \n", task.Name)
 
@@ -83,6 +91,18 @@ func (s *Supervisor) SendJoinRequest() {
 		Payload:      b,
 		TargetConnId: s.Sub.Conn.RemoteAddr().String(),
 	}
+}
+
+// Get the plugin file from distributed file system
+func (s *Supervisor) GetFile(remoteName string) {
+	usr, _ := user.Current()
+	usrHome := usr.HomeDir
+	cmd := exec.Command(usrHome+"go/src/crane/tools/sdfs_client/sdfs_client", "-master", "fa18-cs425-g29-01.cs.illinois.edu:5000", "get", remoteName, "./"+remoteName)
+	stdoutStderr, err := cmd.CombinedOutput()
+	if err != nil {
+		log.Fatal(err)
+	}
+	fmt.Printf("%s\n", stdoutStderr)
 }
 
 func main() {

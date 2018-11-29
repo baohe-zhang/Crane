@@ -24,5 +24,5 @@ func main() {
 	tm.AddBolt(bm)
 
 	tm.SubmitFile("../process/process.so", "process.so")
-	tm.Submit(":5005")
+	tm.Submit("fa18-cs425-g29-01.cs.illinois.edu:5050")
 }
