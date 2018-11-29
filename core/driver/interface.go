@@ -135,7 +135,7 @@ func (d *Driver) BuildTopology(topo *topology.Topology) {
 		}
 	}
 
-	time.Sleep(20 * time.Second)
+	time.Sleep(20 * time.Second) // Sleep 20s to ensure all supervisors fetch the .so file
 
 	// Stage 2 : Send the task message information to supervisors
 	for id, tasks := range addrs {
