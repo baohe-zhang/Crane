@@ -97,7 +97,7 @@ func (s *Supervisor) SendJoinRequest() {
 func (s *Supervisor) GetFile(remoteName string) {
 	usr, _ := user.Current()
 	usrHome := usr.HomeDir
-	cmd := exec.Command(usrHome+"go/src/crane/tools/sdfs_client/sdfs_client", "-master", "fa18-cs425-g29-01.cs.illinois.edu:5000", "get", remoteName, "./"+remoteName)
+	cmd := exec.Command(usrHome+"/go/src/crane/tools/sdfs_client/sdfs_client", "-master", "fa18-cs425-g29-01.cs.illinois.edu:5000", "get", remoteName, "./"+remoteName)
 	stdoutStderr, err := cmd.CombinedOutput()
 	if err != nil {
 		log.Fatal(err)
