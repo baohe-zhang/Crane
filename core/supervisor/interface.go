@@ -63,7 +63,7 @@ func (s *Supervisor) StartDaemon() {
 				task := &utils.BoltTaskMessage{}
 				utils.Unmarshal(payload.Content, task)
 				log.Printf("Receive Bolt Dispatch %s with Port %s, Previous workers %v\n", task.Name, task.Port, task.PrevBoltAddr)
-				supervisorC := make(chan string) // Channel to communicate with the worker
+				supervisorC := make(chan string, 100) // Channel to communicate with the worker
 				bw := boltworker.NewBoltWorker(10, task.Name, "./"+task.PluginFile, task.PluginSymbol, 
 					task.Port, task.PrevBoltAddr, task.PrevBoltGroupingHint, task.PrevBoltFieldIndex,
 					task.SuccBoltGroupingHint, task.SuccBoltFieldIndex, supervisorC)
@@ -73,7 +73,7 @@ func (s *Supervisor) StartDaemon() {
 				task := &utils.SpoutTaskMessage{}
 				utils.Unmarshal(payload.Content, task)
 				log.Printf("Receive Spout Dispatch %s with Port %s\n", task.Name, task.Port)
-				supervisorC := make(chan string)
+				supervisorC := make(chan string, 100)
 				sw := spoutworker.NewSpoutWorker(task.Name, "./"+task.PluginFile, task.PluginSymbol, task.Port, 
 					task.GroupingHint, task.FieldIndex, supervisorC)
 				s.SpoutWorkers = append(s.SpoutWorkers, sw)
@@ -146,6 +146,7 @@ func (s *Supervisor) ListenToWorkers() {
 	for _, bw := range s.BoltWorkers {
 		go func() {
 			for message := range bw.SupervisorC {
+				fmt.Println("hello")
 				switch string(message[0]) {
 				case "1":
 					fmt.Println(message)
@@ -156,6 +157,7 @@ func (s *Supervisor) ListenToWorkers() {
 	for _, sw := range s.SpoutWorkers {
 		go func() {
 			for message := range sw.SupervisorC {
+				fmt.Println("hi")
 				switch string(message[0]) {
 				case "1":
 					fmt.Println(message)
