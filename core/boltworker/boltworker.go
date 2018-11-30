@@ -8,6 +8,8 @@ import (
 	"net"
 	"crane/core/messages"
 	"crane/core/utils"
+	"os"
+	"io/ioutil"
 )
 
 const (
@@ -118,6 +120,15 @@ func (bw *BoltWorker) Start() {
 	go bw.distributeTuple()
 	go bw.outputTuple()
 
+	//Test
+	time.Sleep(40 * time.Second)
+	fmt.Println("start serialize")
+	bw.SerializeVariables()
+	time.Sleep(5 * time.Second)
+	fmt.Println("start deserialize")
+	bw.DeserializeVariables()
+	// End Test
+
 	bw.wg.Add(1)
 	bw.wg.Wait()
 }
@@ -222,6 +233,7 @@ func (bw *BoltWorker) outputTuple() {
 	}
 }
 
+// Build a successor boltworker's [index : netaddr] map
 func (bw *BoltWorker) buildSucIndexMap() {
 	bw.publisher.Pool.Range(func(id string, conn net.Conn) {
 		bw.rwmutex.Lock()
@@ -229,6 +241,52 @@ func (bw *BoltWorker) buildSucIndexMap() {
 		bw.rwmutex.Unlock()
 	})
 }
+
+// Serialize and store executors' variables into local file
+func (bw BoltWorker) SerializeVariables() {
+	// Merge all executors' variables
+	var bins []interface{}
+	for _, executor := range bw.executors {
+		bins = append(bins, executor.variables)
+	}
+
+	// Create file to store
+	file, err := os.Create(bw.ProcFuncName)
+	if err != nil {
+		fmt.Println(err)
+		os.Exit(1)
+	}
+	defer file.Close()
+
+	// Store bins's binary value into the file
+	b, _ := json.Marshal(bins)
+	file.Write(b)
+}
+
+// Deserialize executors' variables from local file
+func (bw BoltWorker) DeserializeVariables() {
+	// Open the local file that stores the variables' binary value
+	b, err := ioutil.ReadFile(bw.ProcFuncName)
+	if err != nil {
+		fmt.Println(err)
+		os.Exit(1)
+	}
+
+	// Unmarshal the binary value
+	var bins []interface{}
+	json.Unmarshal(b, &bins)
+
+	// Deserialize to get each executor's variables
+	for index, bin := range bins {
+		bw.executors[index].variables = bin.([]interface{})
+	}
+
+	// Test log
+	for _, executor := range bw.executors {
+		fmt.Println(executor.variables)
+	}
+}
+
 
 // func main() {
 // 	boltWorker_1 := NewBoltWorker(10, "ProcFunc", "5001", []string{"127.0.0.1:5000"}, "byFields", 0, "shuffle", 0)
