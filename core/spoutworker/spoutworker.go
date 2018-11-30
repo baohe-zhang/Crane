@@ -92,8 +92,11 @@ func (sw *SpoutWorker) receiveTuple() {
 	for {
 		var empty []interface{}
 		var tuple []interface{}
+		if (sw.suspend == true) {
+			continue
+		}
 		err :=  sw.procFunc(empty, &tuple, &sw.variables)
-		if (err != nil || sw.suspend == true) {
+		if (err != nil) {
 			continue
 		}
 		sw.tuples <- tuple
