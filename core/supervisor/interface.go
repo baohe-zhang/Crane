@@ -111,6 +111,7 @@ func (s *Supervisor) SendJoinRequest() {
 		Payload:      b,
 		TargetConnId: s.Sub.Conn.RemoteAddr().String(),
 	}
+	fmt.Println("HI")
 }
 
 // Get the plugin file from distributed file system
