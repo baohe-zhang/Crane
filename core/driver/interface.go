@@ -91,16 +91,18 @@ func (d *Driver) StartDaemon() {
 					topo := &topology.Topology{}
 					utils.Unmarshal(payload.Content, topo)
 					d.BuildTopology(topo)
-				// Spout instance responds
+				// Spout instance responses
 				case utils.SUSPEND_RESPONSE:
 					d.SuspendResponseCount++
+
 					if d.SuspendResponseCount == len(d.SpoutMap) {
 						d.Snapshot()
 						d.SuspendResponseCount = 0
 					}
-				// Spout instance responds
+				// Snapshot completion responses from all supervisors
 				case utils.SNAPSHOT_RESPONSE:
 					d.SnapshotResponseCount++
+
 					if d.SnapshotResponseCount == d.TaskSum {
 						// Confirm a correct version snapshot has completed
 						d.SnapshotVersion++
