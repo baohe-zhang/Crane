@@ -59,16 +59,19 @@ func (s *Supervisor) StartDaemon() {
 			case utils.BOLT_TASK:
 				task := &utils.BoltTaskMessage{}
 				utils.Unmarshal(payload.Content, task)
-				bw := boltworker.NewBoltWorker(10, task.Name, "./"+task.PluginFile, task.PluginSymbol, task.Port, task.PrevBoltAddr,
-					task.PrevBoltGroupingHint, task.PrevBoltFieldIndex,
-					task.SuccBoltGroupingHint, task.SuccBoltFieldIndex)
+				supervisorC := make(chan string) // Channel to communicate with the worker
+				bw := boltworker.NewBoltWorker(10, task.Name, "./"+task.PluginFile, task.PluginSymbol, 
+					task.Port, task.PrevBoltAddr, task.PrevBoltGroupingHint, task.PrevBoltFieldIndex,
+					task.SuccBoltGroupingHint, task.SuccBoltFieldIndex, supervisorC)
 				s.BoltWorkers = append(s.BoltWorkers, bw)
 				log.Printf("Receive Bolt Dispatch %s with Port %s, Previous workers %v\n", task.Name, task.Port, task.PrevBoltAddr)
 
 			case utils.SPOUT_TASK:
 				task := &utils.SpoutTaskMessage{}
 				utils.Unmarshal(payload.Content, task)
-				sw := spoutworker.NewSpoutWorker(task.Name, "./"+task.PluginFile, task.PluginSymbol, task.Port, task.GroupingHint, task.FieldIndex)
+				supervisorC := make(chan string)
+				sw := spoutworker.NewSpoutWorker(task.Name, "./"+task.PluginFile, task.PluginSymbol, task.Port, 
+					task.GroupingHint, task.FieldIndex, supervisorC)
 				s.SpoutWorkers = append(s.SpoutWorkers, sw)
 				log.Printf("Receive Spout Dispatch %s with Port %s\n", task.Name, task.Port)
 
@@ -116,6 +119,62 @@ func (s *Supervisor) GetFile(remoteName string) {
 	fmt.Printf("%s\n", stdoutStderr)
 	s.FilePathMap[remoteName] = "./" + remoteName
 }
+
+// Listen workers reply through channels
+func (s *Supervisor) ListenToWorkers() {
+	for {
+		for _, bw := range s.BoltWorkers {
+			select {
+			case message := <-bw.SupervisorC:
+				fmt.Println(message)
+			default:
+			}
+		}
+		for _, sw := range s.SpoutWorkers {
+			select {
+			case message := <-sw.SupervisorC:
+				fmt.Println(message)
+			default:
+			}
+		}
+	}
+}
+
+// Notify all workers to serialize their variables
+func (s *Supervisor) SendSeqializeRequest(version string) {
+	// Message Type:
+	// Superviosr -> Worker
+	// 1. Please Serialize Variables With Version X    Superviosr -> Worker
+	// 2. Please Kill Yourself                         Superviosr -> Worker
+	// Worker -> Supervisor
+	// 1. Serialized Variables With Version X          Worker -> Supervisor
+
+	for _, bw := range s.BoltWorkers {
+		bw.SupervisorC <- fmt.Sprintf("1. Please Serialize Variables With Version %s", version)
+	}
+	for _, sw := range s.SpoutWorkers {
+		sw.SupervisorC <- fmt.Sprintf("1. Please Serialize Variables With Version %s", version)
+	}
+}
+
+// Notify all workers to kill themselves
+func (s *Supervisor) SendKillRequest() {
+	// Message Type:
+	// Superviosr -> Worker
+	// 1. Please Serialize Variables With Version X    Superviosr -> Worker
+	// 2. Please Kill Yourself                         Superviosr -> Worker
+	// Worker -> Supervisor
+	// 1. Serialized Variables With Version X          Worker -> Supervisor
+
+	for _, bw := range s.BoltWorkers {
+		bw.SupervisorC <- fmt.Sprintf("2. Please Kill Yourself")
+	}
+	for _, sw := range s.SpoutWorkers {
+		sw.SupervisorC <- fmt.Sprintf("2. Please Kill Yourself")
+	}
+}
+
+
 
 func main() {
 	driverIpPtr := flag.String("h", "127.0.0.1", "Driver's IP address")

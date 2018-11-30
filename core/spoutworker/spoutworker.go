@@ -26,9 +26,12 @@ type SpoutWorker struct {
 	sucIndexMap map[int]string
 	rwmutex sync.RWMutex
 	wg sync.WaitGroup
+	SupervisorC chan string
 }
 
-func NewSpoutWorker(name string, pluginFilename string, pluginSymbol string, port string, sucGrouping string, sucField int) *SpoutWorker {
+func NewSpoutWorker(name string, pluginFilename string, pluginSymbol string, port string, 
+					sucGrouping string, sucField int, supervisorC chan string) *SpoutWorker {
+
 	procFunc := utils.LookupProcFunc(pluginFilename, pluginSymbol)
 
 	tuples := make(chan []interface{}, BUFLEN)
@@ -50,6 +53,7 @@ func NewSpoutWorker(name string, pluginFilename string, pluginSymbol string, por
 		sucGrouping: sucGrouping,
 		sucField: sucField,
 		sucIndexMap: sucIndexMap,
+		SupervisorC: supervisorC,
 	}
 
 	return sw

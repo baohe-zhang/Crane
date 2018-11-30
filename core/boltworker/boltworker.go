@@ -35,7 +35,7 @@ type BoltWorker struct {
 	sucIndexMap map[int]string
 	rwmutex sync.RWMutex
 	wg sync.WaitGroup
-	supervisorC chan string
+	SupervisorC chan string
 }
 
 type Executor struct {
@@ -50,7 +50,8 @@ func NewBoltWorker(numWorkers int, name string,
 					pluginFilename string, pluginSymbol string, 
 					port string, subAddrs []string, 
 					preGrouping string, preField int, 
-					sucGrouping string, sucField int) *BoltWorker {
+					sucGrouping string, sucField int, 
+					supervisorC chan string) *BoltWorker {
 
 	tuples := make(chan []interface{}, BUFLEN)
 	results := make(chan []interface{}, BUFLEN)
@@ -94,6 +95,7 @@ func NewBoltWorker(numWorkers int, name string,
 		sucGrouping: sucGrouping,
 		sucField: sucField,
 		sucIndexMap: sucIndexMap,
+		SupervisorC: supervisorC,
 	}
 
 	return bw
@@ -252,7 +254,7 @@ func (bw *BoltWorker) buildSucIndexMap() {
 }
 
 // Serialize and store executors' variables into local file
-func (bw BoltWorker) SerializeVariables(version string) {
+func (bw *BoltWorker) SerializeVariables(version string) {
 	// Merge all executors' variables
 	var bins []interface{}
 	for _, executor := range bw.executors {
@@ -273,7 +275,7 @@ func (bw BoltWorker) SerializeVariables(version string) {
 }
 
 // Deserialize executors' variables from local file
-func (bw BoltWorker) DeserializeVariables(version string) {
+func (bw *BoltWorker) DeserializeVariables(version string) {
 	// Open the local file that stores the variables' binary value
 	b, err := ioutil.ReadFile(bw.Name + "-" + version)
 	if err != nil {
@@ -292,7 +294,7 @@ func (bw BoltWorker) DeserializeVariables(version string) {
 }
 
 // The channel to communicate with the supervisor
-func (bw BoltWorker) TalkWithSupervisor() {
+func (bw *BoltWorker) TalkWithSupervisor() {
 	// Message Type:
 	// Superviosr -> Worker
 	// 1. Please Serialize Variables With Version X    Superviosr -> Worker
@@ -300,7 +302,7 @@ func (bw BoltWorker) TalkWithSupervisor() {
 	// Worker -> Supervisor
 	// 1. Serialized Variables With Version X          Worker -> Supervisor
 
-	for message := range bw.supervisorC {
+	for message := range bw.SupervisorC {
 		switch string(message[0]) {
 		case "1":
 			words := strings.Fields(message)
@@ -308,7 +310,7 @@ func (bw BoltWorker) TalkWithSupervisor() {
 			fmt.Printf("Serialize Variables With Version %s\n", version)
 			bw.SerializeVariables(version)
 			// Notify the supervisor it serialized the variables
-			bw.supervisorC <- fmt.Sprintf("%s Serialized Variables With Version %s\n", bw.Name, version)
+			bw.SupervisorC <- fmt.Sprintf("%s Serialized Variables With Version %s\n", bw.Name, version)
 
 		case "2":
 			bw.wg.Done()
