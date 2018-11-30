@@ -19,13 +19,15 @@ const ()
 // Driver, the master node daemon server for scheduling and
 // dispaching the spouts or bolts task
 type Driver struct {
-	Pub             *messages.Publisher
-	SupervisorIdMap []string
-	LockSIM         sync.RWMutex
-	TopologyGraph   map[string][]interface{}
-	SpoutMap        map[string]spout.SpoutInst
-	BoltMap         map[string]bolt.BoltInst
-	VmIndexMap      map[int]string
+	Pub              *messages.Publisher
+	SupervisorIdMap  []string
+	LockSIM          sync.RWMutex
+	TopologyGraph    map[string][]interface{}
+	SpoutMap         map[string]spout.SpoutInst
+	BoltMap          map[string]bolt.BoltInst
+	VmIndexMap       map[int]string
+	SusResponseCount int
+	TaskSum          int
 }
 
 // Factory mode to return the Driver instance
@@ -36,6 +38,7 @@ func NewDriver(addr string) *Driver {
 	driver.SpoutMap = make(map[string]spout.SpoutInst)
 	driver.BoltMap = make(map[string]bolt.BoltInst)
 	driver.VmIndexMap = make(map[int]string)
+	driver.SusResponseCount = 0
 	return driver
 }
 
@@ -85,6 +88,12 @@ func (d *Driver) StartDaemon() {
 					topo := &topology.Topology{}
 					utils.Unmarshal(payload.Content, topo)
 					d.BuildTopology(topo)
+				// Spout instance responds
+				case utils.SUSPEND_RESPONSE:
+					d.SusResponseCount++
+					if d.SusResponseCount == len(d.SpoutMap) {
+						d.Snapshot()
+					}
 				}
 			default:
 			}
@@ -135,7 +144,9 @@ func (d *Driver) BuildTopology(topo *topology.Topology) {
 		}
 	}
 
-	time.Sleep(20 * time.Second) // Sleep 20s to ensure all supervisors fetch the .so file
+	d.TaskSum = count
+
+	time.Sleep(10 * time.Second) // Sleep 20s to ensure all supervisors fetch the .so file
 
 	// Stage 2 : Send the task message information to supervisors
 	for id, tasks := range addrs {
@@ -214,6 +225,43 @@ func (d *Driver) BuildTopology(topo *topology.Topology) {
 			TargetConnId: targetId,
 		}
 	}
+
+	// Stage 4 : Start snapshot process
+	d.SuspendRequest()
+}
+
+// Timer to request suspend on spout instances
+// before request backup snapshot for each node workers
+func (d *Driver) SuspendRequest() {
+	for {
+		time.Sleep(20)
+		hostConnIdMap := make(map[string]string)
+		for _, connId := range d.SupervisorIdMap {
+			host, _, _ := net.SplitHostPort(connId)
+			hostConnIdMap[host] = connId
+		}
+
+		spoutHosts := make(map[string]string)
+		for _, spout := range d.SpoutMap {
+			for _, addr := range spout.TaskAddrs {
+				host, _, _ := net.SplitHostPort(addr)
+				spoutHosts[host] = hostConnIdMap[host]
+			}
+		}
+
+		for _, connId := range spoutHosts {
+			b, _ := utils.Marshal(utils.SUSPEND_REQUEST, utils.SUSPEND_REQUEST)
+			d.Pub.PublishBoard <- messages.Message{
+				Payload:      b,
+				TargetConnId: connId,
+			}
+		}
+	}
+}
+
+// Send snapshot signal to supervisors
+func (d *Driver) Snapshot() {
+
 }
 
 // Generate Topology Messages for each bolt or spout instance

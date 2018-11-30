@@ -7,6 +7,10 @@ import (
 const (
 	JOIN_REQUEST        = "join_reqeust"
 	FILE_PULL           = "file_pull"
+	SUSPEND_REQUEST     = "suspend_request"
+	SUSPEND_RESPONSE    = "suspend_response"
+	SNAPSHOT_REQUEST    = "snapshot_request"
+	SNAPSHOT_RESPONSE   = "snapshot_response"
 	TOPO_SUBMISSION     = "topo_submission"
 	TOPO_SUBMISSION_RES = "topo_submission_response"
 	BOLT_TASK           = "bolt_task"
