@@ -65,7 +65,7 @@ func (d *Driver) StartDaemon() {
 					utils.Unmarshal(payload.Content, content)
 					d.LockSIM.Lock()
 					d.SupervisorIdMap = append(d.SupervisorIdMap, connId)
-					fmt.println(len(d.SupervisorIdMap))
+					fmt.Println(len(d.SupervisorIdMap))
 					d.LockSIM.Unlock()
 					log.Println("Supervisor ID Name", content.Name)
 				// if it is the connection notification about the connection pools
