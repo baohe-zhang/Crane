@@ -42,7 +42,7 @@ func (s *Supervisor) StartDaemon() {
 	go s.Sub.RequestMessage()
 	go s.Sub.ReadMessage()
 	s.SendJoinRequest()
-	go s.ListenToWorkers()
+	// go s.ListenToWorkers()
 
 	for {
 		select {
@@ -111,7 +111,6 @@ func (s *Supervisor) SendJoinRequest() {
 		Payload:      b,
 		TargetConnId: s.Sub.Conn.RemoteAddr().String(),
 	}
-	fmt.Println("HI")
 }
 
 // Get the plugin file from distributed file system
