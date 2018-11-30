@@ -87,7 +87,7 @@ func (s *Supervisor) StartDaemon() {
 				}
 
 			case utils.SUSPEND_REQUEST:
-				fmt.Printf("Receive Suspend Request From Driver")
+				fmt.Printf("Receive Suspend Request From Driver\n")
 				s.SendSuspendRequestToWorkers()
 
 			case utils.SNAPSHOT_REQUEST:
@@ -169,6 +169,7 @@ func (s *Supervisor) ListenToWorkers() {
 }
 
 func (s *Supervisor) SendSuspendResponseToDriver() {
+	fmt.Println("Send suspend reponse to driver")
 	b, _ := utils.Marshal(utils.SUSPEND_RESPONSE, "OK")
 	s.Sub.Request <- messages.Message{
 		Payload:      b,

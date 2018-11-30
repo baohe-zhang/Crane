@@ -251,7 +251,7 @@ func (d *Driver) BuildTopology(topo *topology.Topology) {
 // before request backup snapshot for each node workers
 func (d *Driver) SuspendRequest() {
 	for {
-		time.Sleep(20)
+		time.Sleep(20 * time.Second)
 		hostConnIdMap := make(map[string]string)
 		for _, connId := range d.SupervisorIdMap {
 			host, _, _ := net.SplitHostPort(connId)
