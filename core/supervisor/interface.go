@@ -10,7 +10,7 @@ import (
 	"log"
 	"os/exec"
 	"os/user"
-	// "time"
+	"time"
 )
 
 // Supervisor, the slave node for accepting the schedule from the master node
@@ -42,7 +42,8 @@ func (s *Supervisor) StartDaemon() {
 	go s.Sub.RequestMessage()
 	go s.Sub.ReadMessage()
 	s.SendJoinRequest()
-	// go s.ListenToWorkers()
+	time.Sleep(time.Second)
+	go s.ListenToWorkers()
 
 	for {
 		select {
@@ -141,33 +142,30 @@ func (s *Supervisor) ListenToWorkers() {
 	// Worker -> Supervisor
 	// 1. Serialized Variables With Version X          Worker -> Supervisor
 	// 2. W Suspended                                  Worker -> Supervisor
-	for {
-		for _, bw := range s.BoltWorkers {
-			select {
-			case message := <-bw.SupervisorC:
+	for _, bw := range s.BoltWorkers {
+		go func() {
+			for message := range bw.SupervisorC {
 				switch string(message[0]) {
 				case "1":
-					fmt.Println(message)
-				case "2":
 					fmt.Println(message)
 				}
-			default:
 			}
-		}
-		for _, sw := range s.SpoutWorkers {
-			select {
-			case message := <-sw.SupervisorC:
+		}()
+	}
+	for _, sw := range s.SpoutWorkers {
+		go func() {
+			for message := range sw.SupervisorC {
 				switch string(message[0]) {
 				case "1":
 					fmt.Println(message)
 				case "2":
-					fmt.Println(message) // Spout Woker Suspended
+					fmt.Println(message)
 					s.SendSuspendResponseToDriver()
 				}
-			default:
 			}
-		}
+		}()
 	}
+	fmt.Println("Listening To Workers")
 }
 
 func (s *Supervisor) SendSuspendResponseToDriver() {
