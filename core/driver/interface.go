@@ -149,6 +149,7 @@ func (d *Driver) BuildTopology(topo *topology.Topology) {
 	time.Sleep(10 * time.Second) // Sleep 20s to ensure all supervisors fetch the .so file
 
 	// Stage 2 : Send the task message information to supervisors
+	count = 1
 	for id, tasks := range addrs {
 		targetId := d.SupervisorIdMap[uint32(id)]
 		for offset, task := range tasks {
@@ -156,7 +157,7 @@ func (d *Driver) BuildTopology(topo *topology.Topology) {
 			spout, ok := task.(*spout.SpoutInst)
 			if ok {
 				msg := utils.SpoutTaskMessage{
-					Name:         spout.Name,
+					Name:         spout.Name + "_" + fmt.Sprintf("%d", count),
 					GroupingHint: spout.GroupingHint,
 					FieldIndex:   spout.FieldIndex,
 					PluginFile:   spout.PluginFile,
@@ -172,7 +173,7 @@ func (d *Driver) BuildTopology(topo *topology.Topology) {
 			} else {
 				bolt, ok := task.(*bolt.BoltInst)
 				msg := utils.BoltTaskMessage{
-					Name:                 bolt.Name,
+					Name:                 bolt.Name + "_" + fmt.Sprintf("%d", count),
 					SuccBoltGroupingHint: bolt.GroupingHint,
 					SuccBoltFieldIndex:   bolt.FieldIndex,
 					PluginFile:           bolt.PluginFile,
@@ -211,6 +212,7 @@ func (d *Driver) BuildTopology(topo *topology.Topology) {
 					TargetConnId: targetId,
 				}
 			}
+			count++
 		}
 	}
 
@@ -261,7 +263,13 @@ func (d *Driver) SuspendRequest() {
 
 // Send snapshot signal to supervisors
 func (d *Driver) Snapshot() {
-
+	for _, connId := range d.SupervisorIdMap {
+		b, _ := utils.Marshal(utils.SNAPSHOT_REQUEST, "1")
+		d.Pub.PublishBoard <- messages.Message{
+			Payload:      b,
+			TargetConnId: connId,
+		}
+	}
 }
 
 // Generate Topology Messages for each bolt or spout instance
