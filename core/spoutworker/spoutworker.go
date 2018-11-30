@@ -30,6 +30,7 @@ type SpoutWorker struct {
 	rwmutex sync.RWMutex
 	wg sync.WaitGroup
 	SupervisorC chan string
+	suspend bool
 }
 
 func NewSpoutWorker(name string, pluginFilename string, pluginSymbol string, port string, 
@@ -57,6 +58,7 @@ func NewSpoutWorker(name string, pluginFilename string, pluginSymbol string, por
 		sucField: sucField,
 		sucIndexMap: sucIndexMap,
 		SupervisorC: supervisorC,
+		suspend: false,
 	}
 
 	return sw
@@ -91,7 +93,7 @@ func (sw *SpoutWorker) receiveTuple() {
 		var empty []interface{}
 		var tuple []interface{}
 		err :=  sw.procFunc(empty, &tuple, &sw.variables)
-		if (err != nil) {
+		if (err != nil || sw.suspend == true) {
 			continue
 		}
 		sw.tuples <- tuple
@@ -186,8 +188,10 @@ func (sw *SpoutWorker) TalkWithSupervisor() {
 	// Superviosr -> Worker
 	// 1. Please Serialize Variables With Version X    Superviosr -> Worker
 	// 2. Please Kill Yourself                         Superviosr -> Worker
+	// 3. Please Suspend                               Superviosr -> Worker
 	// Worker -> Supervisor
-	// 1. Serialized Variables With Version X          Worker -> Supervisor
+	// 1. W Serialized Variables With Version X        Worker -> Supervisor
+	// 2. W Suspended                                  Worker -> Supervisor
 
 	for message := range sw.SupervisorC {
 		switch string(message[0]) {
@@ -197,10 +201,15 @@ func (sw *SpoutWorker) TalkWithSupervisor() {
 			fmt.Printf("Serialize Variables With Version %s\n", version)
 			sw.SerializeVariables(version)
 			// Notify the supervisor it serialized the variables
-			sw.SupervisorC <- fmt.Sprintf("%s Serialized Variables With Version %s\n", sw.Name, version)
+			sw.SupervisorC <- fmt.Sprintf("1. %s Serialized Variables With Version %s\n", sw.Name, version)
 
 		case "2":
 			sw.wg.Done()
+
+		case "3":
+			sw.suspend = true
+			fmt.Printf("Suspend Spout Worker\n")
+			sw.SupervisorC <- fmt.Sprint("2. %s Suspended", sw.Name)
 		}
 	}
 }

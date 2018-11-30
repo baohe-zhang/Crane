@@ -302,6 +302,7 @@ func (bw *BoltWorker) TalkWithSupervisor() {
 	// Superviosr -> Worker
 	// 1. Please Serialize Variables With Version X    Superviosr -> Worker
 	// 2. Please Kill Yourself                         Superviosr -> Worker
+	// 3. Please Suspend                               Superviosr -> Worker
 	// Worker -> Supervisor
 	// 1. Serialized Variables With Version X          Worker -> Supervisor
 

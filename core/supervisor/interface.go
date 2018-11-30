@@ -77,7 +77,7 @@ func (s *Supervisor) StartDaemon() {
 				s.SpoutWorkers = append(s.SpoutWorkers, sw)
 
 			case utils.TASK_ALL_DISPATCHED:
-				fmt.Printf("Finished receive Bolt and Spout Dispatchs\n")
+				fmt.Printf("Receive Bolt and Spout Dispatchs\n")
 				for _, sw := range s.SpoutWorkers {
 					go sw.Start()
 				}
@@ -85,11 +85,15 @@ func (s *Supervisor) StartDaemon() {
 					go bw.Start()
 				}
 
+			case utils.SUSPEND_REQUEST:
+				fmt.Printf("Receive Suspend Request From Driver")
+				s.SendSuspendRequestToWorkers()
+
 			case utils.SNAPSHOT_REQUEST:
 				var version *int
 				utils.Unmarshal(payload.Content, version)
 				fmt.Printf("Receive Snapshot Request With Version %d\n", *version)
-				s.SendSeqializeRequest(string(*version))
+				s.SendSerializeRequestToWorkers(string(*version))
 			}
 		}
 	}
@@ -129,30 +133,58 @@ func (s *Supervisor) GetFile(remoteName string) {
 
 // Listen workers reply through channels
 func (s *Supervisor) ListenToWorkers() {
+	// Message Type:
+	// Superviosr -> Worker
+	// 1. Please Serialize Variables With Version X    Superviosr -> Worker
+	// 2. Please Kill Yourself                         Superviosr -> Worker
+	// 3. Please Suspend                               Superviosr -> Worker
+	// Worker -> Supervisor
+	// 1. Serialized Variables With Version X          Worker -> Supervisor
+	// 2. W Suspended                                  Worker -> Supervisor
 	for {
 		for _, bw := range s.BoltWorkers {
 			select {
 			case message := <-bw.SupervisorC:
-				fmt.Println(message)
+				switch string(message[0]) {
+				case "1":
+					fmt.Println(message)
+				case "2":
+					fmt.Println(message)
+				}
 			default:
 			}
 		}
 		for _, sw := range s.SpoutWorkers {
 			select {
 			case message := <-sw.SupervisorC:
-				fmt.Println(message)
+				switch string(message[0]) {
+				case "1":
+					fmt.Println(message)
+				case "2":
+					fmt.Println(message) // Spout Woker Suspended
+					s.SendSuspendResponseToDriver()
+				}
 			default:
 			}
 		}
 	}
 }
 
+func (s *Supervisor) SendSuspendResponseToDriver() {
+	b, _ := utils.Marshal(utils.SUSPEND_RESPONSE, "OK")
+	s.Sub.Request <- messages.Message{
+		Payload:      b,
+		TargetConnId: s.Sub.Conn.RemoteAddr().String(),
+	}
+}
+
 // Notify all workers to serialize their variables
-func (s *Supervisor) SendSeqializeRequest(version string) {
+func (s *Supervisor) SendSerializeRequestToWorkers(version string) {
 	// Message Type:
 	// Superviosr -> Worker
 	// 1. Please Serialize Variables With Version X    Superviosr -> Worker
 	// 2. Please Kill Yourself                         Superviosr -> Worker
+	// 3. Please Suspend                               Superviosr -> Worker
 	// Worker -> Supervisor
 	// 1. Serialized Variables With Version X          Worker -> Supervisor
 
@@ -165,19 +197,19 @@ func (s *Supervisor) SendSeqializeRequest(version string) {
 }
 
 // Notify all workers to kill themselves
-func (s *Supervisor) SendKillRequest() {
-	// Message Type:
-	// Superviosr -> Worker
-	// 1. Please Serialize Variables With Version X    Superviosr -> Worker
-	// 2. Please Kill Yourself                         Superviosr -> Worker
-	// Worker -> Supervisor
-	// 1. Serialized Variables With Version X          Worker -> Supervisor
-
+func (s *Supervisor) SendKillRequestToWorkers() {
 	for _, bw := range s.BoltWorkers {
 		bw.SupervisorC <- fmt.Sprintf("2. Please Kill Yourself")
 	}
 	for _, sw := range s.SpoutWorkers {
 		sw.SupervisorC <- fmt.Sprintf("2. Please Kill Yourself")
+	}
+}
+
+// Send suspend request to spouts
+func (s *Supervisor) SendSuspendRequestToWorkers() {
+	for _, sw := range s.SpoutWorkers {
+		sw.SupervisorC <- fmt.Sprintf("3. Please Suspend")
 	}
 }
 
