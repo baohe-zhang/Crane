@@ -11,6 +11,7 @@ import (
 	"os/exec"
 	"os/user"
 	"time"
+	"sync"
 )
 
 // Supervisor, the slave node for accepting the schedule from the master node
@@ -166,6 +167,9 @@ func (s *Supervisor) ListenToWorkers() {
 		}()
 	}
 	fmt.Println("Listening To Workers")
+	var wg sync.WaitGroup
+	wg.Add(1)
+	wg.Wait()
 }
 
 func (s *Supervisor) SendSuspendResponseToDriver() {
