@@ -15,7 +15,7 @@ const (
 )
 
 type SpoutWorker struct {
-	ProcFuncName string
+	Name string
 	procFunc func([]interface{}, *[]interface{}, *[]interface{}) error
 	port string
 	tuples chan []interface{}
@@ -28,8 +28,8 @@ type SpoutWorker struct {
 	wg sync.WaitGroup
 }
 
-func NewSpoutWorker(pluginFilename string, procFuncName string, port string, sucGrouping string, sucField int) *SpoutWorker {
-	procFunc := utils.LookupProcFunc(pluginFilename, procFuncName)
+func NewSpoutWorker(name string, pluginFilename string, pluginSymbol string, port string, sucGrouping string, sucField int) *SpoutWorker {
+	procFunc := utils.LookupProcFunc(pluginFilename, pluginSymbol)
 
 	tuples := make(chan []interface{}, BUFLEN)
 	variables := make([]interface{}, 0) // Store spout's global variables
@@ -41,7 +41,7 @@ func NewSpoutWorker(pluginFilename string, procFuncName string, port string, suc
 	sucIndexMap := make(map[int]string)
 
 	sw := &SpoutWorker{
-		ProcFuncName: procFuncName,
+		Name: name,
 		procFunc: procFunc,
 		port: port,
 		tuples: tuples,
@@ -58,7 +58,7 @@ func NewSpoutWorker(pluginFilename string, procFuncName string, port string, suc
 func (sw *SpoutWorker) Start() {
 	defer close(sw.tuples)
 
-	fmt.Printf("spout worker %s start\n", sw.ProcFuncName)
+	fmt.Printf("spout worker %s start\n", sw.Name)
 
 	// Start publisher
 	sw.publisher = messages.NewPublisher(":"+sw.port)
