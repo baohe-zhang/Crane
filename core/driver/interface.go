@@ -19,15 +19,17 @@ const ()
 // Driver, the master node daemon server for scheduling and
 // dispaching the spouts or bolts task
 type Driver struct {
-	Pub              *messages.Publisher
-	SupervisorIdMap  []string
-	LockSIM          sync.RWMutex
-	TopologyGraph    map[string][]interface{}
-	SpoutMap         map[string]spout.SpoutInst
-	BoltMap          map[string]bolt.BoltInst
-	VmIndexMap       map[int]string
-	SusResponseCount int
-	TaskSum          int
+	Pub                   *messages.Publisher
+	SupervisorIdMap       []string
+	LockSIM               sync.RWMutex
+	TopologyGraph         map[string][]interface{}
+	SpoutMap              map[string]spout.SpoutInst
+	BoltMap               map[string]bolt.BoltInst
+	VmIndexMap            map[int]string
+	SuspendResponseCount  int
+	SnapshotResponseCount int
+	TaskSum               int
+	SnapshotVersion       int
 }
 
 // Factory mode to return the Driver instance
@@ -38,7 +40,8 @@ func NewDriver(addr string) *Driver {
 	driver.SpoutMap = make(map[string]spout.SpoutInst)
 	driver.BoltMap = make(map[string]bolt.BoltInst)
 	driver.VmIndexMap = make(map[int]string)
-	driver.SusResponseCount = 0
+	driver.SuspendResponseCount = 0
+	driver.SnapshotResponseCount = 0
 	return driver
 }
 
@@ -90,9 +93,18 @@ func (d *Driver) StartDaemon() {
 					d.BuildTopology(topo)
 				// Spout instance responds
 				case utils.SUSPEND_RESPONSE:
-					d.SusResponseCount++
-					if d.SusResponseCount == len(d.SpoutMap) {
+					d.SuspendResponseCount++
+					if d.SuspendResponseCount == len(d.SpoutMap) {
 						d.Snapshot()
+						d.SuspendResponseCount = 0
+					}
+				// Spout instance responds
+				case utils.SNAPSHOT_RESPONSE:
+					d.SnapshotResponseCount++
+					if d.SnapshotResponseCount == d.TaskSum {
+						// Confirm a correct version snapshot has completed
+						d.SnapshotVersion++
+						d.SnapshotResponseCount = 0
 					}
 				}
 			default:
@@ -146,7 +158,7 @@ func (d *Driver) BuildTopology(topo *topology.Topology) {
 
 	d.TaskSum = count
 
-	time.Sleep(10 * time.Second) // Sleep 20s to ensure all supervisors fetch the .so file
+	time.Sleep(10 * time.Second) // Sleep 10s to ensure all supervisors fetch the .so file
 
 	// Stage 2 : Send the task message information to supervisors
 	count = 1
@@ -264,7 +276,7 @@ func (d *Driver) SuspendRequest() {
 // Send snapshot signal to supervisors
 func (d *Driver) Snapshot() {
 	for _, connId := range d.SupervisorIdMap {
-		b, _ := utils.Marshal(utils.SNAPSHOT_REQUEST, "1")
+		b, _ := utils.Marshal(utils.SNAPSHOT_REQUEST, d.SnapshotVersion)
 		d.Pub.PublishBoard <- messages.Message{
 			Payload:      b,
 			TargetConnId: connId,
