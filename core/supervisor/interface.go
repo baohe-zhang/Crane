@@ -42,6 +42,7 @@ func (s *Supervisor) StartDaemon() {
 	go s.Sub.RequestMessage()
 	go s.Sub.ReadMessage()
 	s.SendJoinRequest()
+	go s.ListenToWorkers()
 
 	for {
 		select {
@@ -59,21 +60,21 @@ func (s *Supervisor) StartDaemon() {
 			case utils.BOLT_TASK:
 				task := &utils.BoltTaskMessage{}
 				utils.Unmarshal(payload.Content, task)
+				log.Printf("Receive Bolt Dispatch %s with Port %s, Previous workers %v\n", task.Name, task.Port, task.PrevBoltAddr)
 				supervisorC := make(chan string) // Channel to communicate with the worker
 				bw := boltworker.NewBoltWorker(10, task.Name, "./"+task.PluginFile, task.PluginSymbol, 
 					task.Port, task.PrevBoltAddr, task.PrevBoltGroupingHint, task.PrevBoltFieldIndex,
 					task.SuccBoltGroupingHint, task.SuccBoltFieldIndex, supervisorC)
 				s.BoltWorkers = append(s.BoltWorkers, bw)
-				log.Printf("Receive Bolt Dispatch %s with Port %s, Previous workers %v\n", task.Name, task.Port, task.PrevBoltAddr)
 
 			case utils.SPOUT_TASK:
 				task := &utils.SpoutTaskMessage{}
 				utils.Unmarshal(payload.Content, task)
+				log.Printf("Receive Spout Dispatch %s with Port %s\n", task.Name, task.Port)
 				supervisorC := make(chan string)
 				sw := spoutworker.NewSpoutWorker(task.Name, "./"+task.PluginFile, task.PluginSymbol, task.Port, 
 					task.GroupingHint, task.FieldIndex, supervisorC)
 				s.SpoutWorkers = append(s.SpoutWorkers, sw)
-				log.Printf("Receive Spout Dispatch %s with Port %s\n", task.Name, task.Port)
 
 			case utils.TASK_ALL_DISPATCHED:
 				fmt.Printf("Finished receive Bolt and Spout Dispatchs\n")
@@ -83,6 +84,12 @@ func (s *Supervisor) StartDaemon() {
 				for _, bw := range s.BoltWorkers {
 					go bw.Start()
 				}
+
+			case utils.SNAPSHOT_REQUEST:
+				var version *int
+				utils.Unmarshal(payload.Content, version)
+				fmt.Printf("Receive Snapshot Request With Version %d\n", *version)
+				s.SendSeqializeRequest(string(*version))
 			}
 		}
 	}
