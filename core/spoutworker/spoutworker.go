@@ -8,6 +8,9 @@ import (
 	"net"
 	"crane/core/messages"
 	"crane/core/utils"
+	"os"
+	"io/ioutil"
+	"strings"
 )
 
 const (
@@ -63,6 +66,9 @@ func (sw *SpoutWorker) Start() {
 	defer close(sw.tuples)
 
 	fmt.Printf("spout worker %s start\n", sw.Name)
+
+	// Start channel with supervisor
+	go sw.TalkWithSupervisor()
 
 	// Start publisher
 	sw.publisher = messages.NewPublisher(":"+sw.port)
@@ -142,12 +148,61 @@ func (sw *SpoutWorker) buildSucIndexMap() {
 	})
 }
 
+// Serialize and store variables into local file
+func (sw *SpoutWorker) SerializeVariables(version string) {
+	// Create file to store
+	file, err := os.Create(sw.Name + "-" + version)
+	if err != nil {
+		fmt.Println(err)
+		os.Exit(1)
+	}
+	defer file.Close()
 
-// func main() {
-// 	spoutWorker := NewSpoutWorker("NextTuple", "5000", "byFields", 0)
-// 	go spoutWorker.Start()
+	// Store variable's binary value into the file
+	b, _ := json.Marshal(sw.variables)
+	file.Write(b)
+}
 
-// 	var wg sync.WaitGroup
-// 	wg.Add(1)
-// 	wg.Wait()
-// }
+// Deserialize variables from local file
+func (sw *SpoutWorker) DeserializeVariables(version string) {
+	// Open the local file that stores the variables' binary value
+	b, err := ioutil.ReadFile(sw.Name + "-" + version)
+	if err != nil {
+		fmt.Println(err)
+		os.Exit(1)
+	}
+
+	// Unmarshal the binary value
+	var variables []interface{}
+	json.Unmarshal(b, &variables)
+
+	// Deserialize to get variables
+	sw.variables = variables
+}
+
+// The channel to communicate with the supervisor
+func (sw *SpoutWorker) TalkWithSupervisor() {
+	// Message Type:
+	// Superviosr -> Worker
+	// 1. Please Serialize Variables With Version X    Superviosr -> Worker
+	// 2. Please Kill Yourself                         Superviosr -> Worker
+	// Worker -> Supervisor
+	// 1. Serialized Variables With Version X          Worker -> Supervisor
+
+	for message := range sw.SupervisorC {
+		switch string(message[0]) {
+		case "1":
+			words := strings.Fields(message)
+			version := words[len(words) - 1]
+			fmt.Printf("Serialize Variables With Version %s\n", version)
+			sw.SerializeVariables(version)
+			// Notify the supervisor it serialized the variables
+			sw.SupervisorC <- fmt.Sprintf("%s Serialized Variables With Version %s\n", sw.Name, version)
+
+		case "2":
+			sw.wg.Done()
+		}
+	}
+}
+
+

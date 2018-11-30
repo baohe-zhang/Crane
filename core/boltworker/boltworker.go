@@ -107,6 +107,9 @@ func (bw *BoltWorker) Start() {
 
 	fmt.Printf("bolt worker %s start\n", bw.Name)
 
+	// Start channel with supervisor
+	go bw.TalkWithSupervisor()
+
 	// Start publisher
 	bw.publisher = messages.NewPublisher(":"+bw.port)
 	go bw.publisher.AcceptConns()
