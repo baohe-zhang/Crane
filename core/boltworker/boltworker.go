@@ -244,11 +244,10 @@ func (bw *BoltWorker) buildSucIndexMap() {
 
 // Serialize and store executors' variables into local file
 func (bw BoltWorker) SerializeVariables() {
-	// Merge the binary value of all executors' variables
+	// Merge all executors' variables
 	var bins []interface{}
 	for _, executor := range bw.executors {
-		bin, _ := json.Marshal(executor.variables)
-		bins = append(bins, bin)
+		bins = append(bins, executor.variables)
 	}
 
 	// Create file to store
@@ -279,7 +278,7 @@ func (bw BoltWorker) DeserializeVariables() {
 
 	// Deserialize to get each executor's variables
 	for index, bin := range bins {
-		json.Unmarshal(bin.([]byte), &(bw.executors[index].variables))
+		bw.executors[index].variables = bin.([]interface{})
 	}
 
 	// Test log
