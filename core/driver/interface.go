@@ -241,7 +241,7 @@ func (d *Driver) BuildTopology(topo *topology.Topology) {
 	}
 
 	// Stage 4 : Start snapshot process
-	d.SuspendRequest()
+	go d.SuspendRequest()
 }
 
 // Timer to request suspend on spout instances
