@@ -10,6 +10,7 @@ import (
 	"crane/core/utils"
 	"os"
 	"io/ioutil"
+	"strings"
 )
 
 const (
@@ -18,7 +19,7 @@ const (
 )
 
 type BoltWorker struct {
-	ProcFuncName string
+	Name string
 	numWorkers int
 	executors []*Executor
 	tuples chan []interface{}
@@ -34,6 +35,7 @@ type BoltWorker struct {
 	sucIndexMap map[int]string
 	rwmutex sync.RWMutex
 	wg sync.WaitGroup
+	supervisorC chan string
 }
 
 type Executor struct {
@@ -44,14 +46,17 @@ type Executor struct {
 	variables []interface{}
 }
 
-func NewBoltWorker(numWorkers int, pluginFilename string, procFuncName string, port string, subAddrs []string, 
+func NewBoltWorker(numWorkers int, name string, 
+					pluginFilename string, pluginSymbol string, 
+					port string, subAddrs []string, 
 					preGrouping string, preField int, 
 					sucGrouping string, sucField int) *BoltWorker {
+
 	tuples := make(chan []interface{}, BUFLEN)
 	results := make(chan []interface{}, BUFLEN)
 
 	// Lookup ProcFunc
-	procFunc := utils.LookupProcFunc(pluginFilename, procFuncName)
+	procFunc := utils.LookupProcFunc(pluginFilename, pluginSymbol)
 
 	// Create executors
 	executors := make([]*Executor, 0)
@@ -75,7 +80,7 @@ func NewBoltWorker(numWorkers int, pluginFilename string, procFuncName string, p
 	sucIndexMap := make(map[int]string)
 
 	bw := &BoltWorker{
-		ProcFuncName: procFuncName, 
+		Name: name, 
 		numWorkers: numWorkers,
 		executors: executors,
 		tuples: tuples,
@@ -98,7 +103,7 @@ func (bw *BoltWorker) Start() {
 	defer close(bw.tuples)
 	defer close(bw.results)
 
-	fmt.Printf("bolt worker %s start\n", bw.ProcFuncName)
+	fmt.Printf("bolt worker %s start\n", bw.Name)
 
 	// Start publisher
 	bw.publisher = messages.NewPublisher(":"+bw.port)
@@ -120,17 +125,21 @@ func (bw *BoltWorker) Start() {
 	go bw.distributeTuple()
 	go bw.outputTuple()
 
-	//Test
-	time.Sleep(40 * time.Second)
-	fmt.Println("start serialize")
-	bw.SerializeVariables()
-	time.Sleep(5 * time.Second)
-	fmt.Println("start deserialize")
-	bw.DeserializeVariables()
-	// End Test
+	// //Test
+	// time.Sleep(40 * time.Second)
+	// fmt.Println("start serialize")
+	// bw.SerializeVariables()
+	// time.Sleep(5 * time.Second)
+	// fmt.Println("start deserialize")
+	// bw.DeserializeVariables()
+	// for _, executor := range bw.executors {
+	// 	fmt.Println(executor.variables)
+	// }
+	// // End Test
 
 	bw.wg.Add(1)
 	bw.wg.Wait()
+	fmt.Printf("Worker Bolt %s Terminates\n", bw.Name)
 }
 
 func (bw *BoltWorker) receiveTuple() {
@@ -243,7 +252,7 @@ func (bw *BoltWorker) buildSucIndexMap() {
 }
 
 // Serialize and store executors' variables into local file
-func (bw BoltWorker) SerializeVariables() {
+func (bw BoltWorker) SerializeVariables(version string) {
 	// Merge all executors' variables
 	var bins []interface{}
 	for _, executor := range bw.executors {
@@ -251,7 +260,7 @@ func (bw BoltWorker) SerializeVariables() {
 	}
 
 	// Create file to store
-	file, err := os.Create(bw.ProcFuncName)
+	file, err := os.Create(bw.Name + "-" + version)
 	if err != nil {
 		fmt.Println(err)
 		os.Exit(1)
@@ -264,9 +273,9 @@ func (bw BoltWorker) SerializeVariables() {
 }
 
 // Deserialize executors' variables from local file
-func (bw BoltWorker) DeserializeVariables() {
+func (bw BoltWorker) DeserializeVariables(version string) {
 	// Open the local file that stores the variables' binary value
-	b, err := ioutil.ReadFile(bw.ProcFuncName)
+	b, err := ioutil.ReadFile(bw.Name + "-" + version)
 	if err != nil {
 		fmt.Println(err)
 		os.Exit(1)
@@ -280,10 +289,30 @@ func (bw BoltWorker) DeserializeVariables() {
 	for index, bin := range bins {
 		bw.executors[index].variables = bin.([]interface{})
 	}
+}
 
-	// Test log
-	for _, executor := range bw.executors {
-		fmt.Println(executor.variables)
+// The channel to communicate with the supervisor
+func (bw BoltWorker) TalkWithSupervisor() {
+	// Message Type:
+	// Superviosr -> Worker
+	// 1. Please Serialize Variables With Version X    Superviosr -> Worker
+	// 2. Please Kill Yourself                         Superviosr -> Worker
+	// Worker -> Supervisor
+	// 1. Serialized Variables With Version X          Worker -> Supervisor
+
+	for message := range bw.supervisorC {
+		switch string(message[0]) {
+		case "1":
+			words := strings.Fields(message)
+			version := words[len(words) - 1]
+			fmt.Printf("Serialize Variables With Version %s\n", version)
+			bw.SerializeVariables(version)
+			// Notify the supervisor it serialized the variables
+			bw.supervisorC <- fmt.Sprintf("%s Serialized Variables With Version %s\n", bw.Name, version)
+
+		case "2":
+			bw.wg.Done()
+		}
 	}
 }
 
