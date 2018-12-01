@@ -157,7 +157,6 @@ func (s *Supervisor) ListenToWorkers() {
 				fmt.Println(message)
 				switch string(message[0]) {
 				case "1":
-					fmt.Println("hi")
 					s.SerializeResponseCounter += 1
 					if (s.SerializeResponseCounter == (len(s.BoltWorkers) + len(s.SpoutWorkers))) {
 						s.SerializeResponseCounter = 0
@@ -175,7 +174,6 @@ func (s *Supervisor) ListenToWorkers() {
 				fmt.Println(message)
 				switch string(message[0]) {
 				case "1":
-					fmt.Println("hi")
 					s.SerializeResponseCounter += 1
 					if (s.SerializeResponseCounter == (len(s.BoltWorkers) + len(s.SpoutWorkers))) {
 						s.SerializeResponseCounter = 0
