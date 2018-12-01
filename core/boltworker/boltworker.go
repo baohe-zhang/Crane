@@ -11,6 +11,7 @@ import (
 	"os"
 	"io/ioutil"
 	"strings"
+	"strconv"
 )
 
 const (
@@ -37,6 +38,7 @@ type BoltWorker struct {
 	wg sync.WaitGroup
 	SupervisorC chan string
 	WorkerC chan string
+	Version string
 }
 
 type Executor struct {
@@ -52,7 +54,7 @@ func NewBoltWorker(numWorkers int, name string,
 					port string, subAddrs []string, 
 					preGrouping string, preField int, 
 					sucGrouping string, sucField int, 
-					supervisorC chan string, workerC chan string) *BoltWorker {
+					supervisorC chan string, workerC chan string, version int) *BoltWorker {
 
 	tuples := make(chan []interface{}, BUFLEN)
 	results := make(chan []interface{}, BUFLEN)
@@ -100,6 +102,12 @@ func NewBoltWorker(numWorkers int, name string,
 		WorkerC: workerC,
 	}
 
+	// Start from restore, read state file to get variables
+	if (version >= 0) {
+		bw.DeserializeVariables(strconv.Itoa(version))
+	}
+	bw.Version = strconv.Itoa(version)
+
 	return bw
 }
 
@@ -134,7 +142,7 @@ func (bw *BoltWorker) Start() {
 
 	bw.wg.Add(1)
 	bw.wg.Wait()
-	fmt.Printf("Worker Bolt %s Terminates\n", bw.Name)
+	fmt.Printf("Bolt Worker %s Terminates\n", bw.Name)
 }
 
 func (bw *BoltWorker) receiveTuple() {
