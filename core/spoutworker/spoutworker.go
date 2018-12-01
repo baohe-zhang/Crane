@@ -206,11 +206,11 @@ func (sw *SpoutWorker) DeserializeVariables(version string) {
 	}
 
 	// Unmarshal the binary value
-	var variables []interface{}
-	json.Unmarshal(b, &variables)
+	// var variables []interface{}
+	json.Unmarshal(b, &sw.variables)
 
 	// Deserialize to get variables
-	sw.variables = variables
+	// sw.variables = variables
 }
 
 // The channel to communicate with the supervisor
