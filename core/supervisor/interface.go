@@ -177,6 +177,7 @@ func (s *Supervisor) ListenToWorkers() {
 					case "2":
 						s.SendSuspendResponseToDriver()
 					}
+				default:
 				}
 			}
 		}
