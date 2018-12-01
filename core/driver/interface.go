@@ -186,6 +186,7 @@ func (d *Driver) BuildTopology(topo *topology.Topology) {
 			tasks := addrs[k]
 			targetId := d.SupervisorIdMap[uint32(k)]
 			for _, task := range tasks {
+				time.Sleep(300 * time.Millisecond)
 				spout, ok := task.(*spout.SpoutInst)
 				if ok {
 					stateFileName := spout.Name + "_" + fmt.Sprintf("%d_%d", count, d.SnapshotVersion-1)
@@ -210,7 +211,7 @@ func (d *Driver) BuildTopology(topo *topology.Topology) {
 		}
 	}
 
-	time.Sleep(8 * time.Second) // Sleep 10s to ensure all supervisors fetch the .so file
+	time.Sleep(5 * time.Second) // Sleep 10s to ensure all supervisors fetch the .so file
 
 	// Stage 2 : Send the task message information to supervisors
 	count = 1
