@@ -76,7 +76,9 @@ func NewSpoutWorker(name string, pluginFilename string, pluginSymbol string, por
 }
 
 func (sw *SpoutWorker) Start() {
-	// defer close(sw.tuples)
+	defer close(sw.tuples)
+	defer close(sw.SupervisorC)
+	defer close(sw.WorkerC)
 
 	fmt.Printf("spout worker %s start\n", sw.Name)
 

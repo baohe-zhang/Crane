@@ -114,6 +114,8 @@ func NewBoltWorker(numWorkers int, name string,
 func (bw *BoltWorker) Start() {
 	defer close(bw.tuples)
 	defer close(bw.results)
+	defer close(bw.SupervisorC)
+	defer close(bw.WorkerC)
 
 	fmt.Printf("bolt worker %s start\n", bw.Name)
 
