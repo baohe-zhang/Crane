@@ -10,7 +10,7 @@ import (
 	"log"
 	"os/exec"
 	"os/user"
-	// "time"
+	"time"
 	"sync"
 	"strconv"
 )
@@ -64,8 +64,8 @@ func (s *Supervisor) StartDaemon() {
 			task := &utils.BoltTaskMessage{}
 			utils.Unmarshal(payload.Content, task)
 			log.Printf("Receive Bolt Dispatch %s with Port %s, Previous workers %v\n", task.Name, task.Port, task.PrevBoltAddr)
-			supervisorC := make(chan string, 100) // Channel to talk to the worker
-			workerC := make(chan string, 100) // Channel to listen to the worker
+			supervisorC := make(chan string) // Channel to talk to the worker
+			workerC := make(chan string) // Channel to listen to the worker
 			bw := boltworker.NewBoltWorker(10, task.Name, "./"+task.PluginFile, task.PluginSymbol, 
 				task.Port, task.PrevBoltAddr, task.PrevBoltGroupingHint, task.PrevBoltFieldIndex,
 				task.SuccBoltGroupingHint, task.SuccBoltFieldIndex, supervisorC, workerC)
@@ -75,14 +75,13 @@ func (s *Supervisor) StartDaemon() {
 			task := &utils.SpoutTaskMessage{}
 			utils.Unmarshal(payload.Content, task)
 			log.Printf("Receive Spout Dispatch %s with Port %s\n", task.Name, task.Port)
-			supervisorC := make(chan string, 100)
-			workerC := make(chan string, 100)
+			supervisorC := make(chan string)
+			workerC := make(chan string)
 			sw := spoutworker.NewSpoutWorker(task.Name, "./"+task.PluginFile, task.PluginSymbol, task.Port, 
 				task.GroupingHint, task.FieldIndex, supervisorC, workerC)
 			s.SpoutWorkers = append(s.SpoutWorkers, sw)
 
 		case utils.TASK_ALL_DISPATCHED:
-			go s.ListenToWorkers()
 			fmt.Printf("Receive Bolt and Spout Dispatchs\n")
 			for _, sw := range s.SpoutWorkers {
 				go sw.Start()
@@ -90,6 +89,8 @@ func (s *Supervisor) StartDaemon() {
 			for _, bw := range s.BoltWorkers {
 				go bw.Start()
 			}
+			time.Sleep(20 * time.Millisecond)
+			go s.ListenToWorkers()
 
 		case utils.SUSPEND_REQUEST:
 			fmt.Printf("Receive Suspend Request From Driver\n")
@@ -146,46 +147,50 @@ func (s *Supervisor) ListenToWorkers() {
 	// Worker -> Supervisor
 	// 1. Serialized Variables With Version X          Worker -> Supervisor
 	// 2. W Suspended                                  Worker -> Supervisor
-	for _, bw := range s.BoltWorkers {
-		go func() {
-			for message := range bw.WorkerC {
+
+	fmt.Println("Listening To Workers")
+
+	for {
+		for _, bw := range s.BoltWorkers {
+			select {
+			case message := <- bw.WorkerC:
+				fmt.Println(message)
 				switch string(message[0]) {
 				case "1":
-					s.Mutex.Lock()
 					s.SerializeResponseCounter += 1
 					if (s.SerializeResponseCounter == (len(s.BoltWorkers) + len(s.SpoutWorkers))) {
 						s.SerializeResponseCounter = 0
 						s.SendSerializeResponseToDriver()
 						s.SendResumeRequestToWorkers()
 					}
-					s.Mutex.Unlock()
 				}
+			default:
 			}
-		}()
-	}
-	for _, sw := range s.SpoutWorkers {
-		go func() {
-			for message := range sw.WorkerC {
+		}
+
+		for _, sw := range s.SpoutWorkers {
+			select {
+			case message := <-sw.WorkerC:
+				fmt.Println(message)
 				switch string(message[0]) {
 				case "1":
-					s.Mutex.Lock()
 					s.SerializeResponseCounter += 1
 					if (s.SerializeResponseCounter == (len(s.BoltWorkers) + len(s.SpoutWorkers))) {
 						s.SerializeResponseCounter = 0
 						s.SendSerializeResponseToDriver()
 						s.SendResumeRequestToWorkers()
 					}
-					s.Mutex.Unlock()
 				case "2":
 					s.SendSuspendResponseToDriver()
 				}
+			default:
 			}
-		}()
+		}
 	}
-	fmt.Println("Listening To Workers")
-	var wg sync.WaitGroup
-	wg.Add(1)
-	wg.Wait()
+
+	// var wg sync.WaitGroup
+	// wg.Add(1)
+	// wg.Wait()
 }
 
 // Notify the driver that the spout is suspended
