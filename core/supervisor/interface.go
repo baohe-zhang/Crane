@@ -150,6 +150,7 @@ func (s *Supervisor) ListenToWorkers() {
 		case signal := <- s.ControlC:
 			fmt.Printf("Receive Signal %s, function return\n", signal)
 			return 
+		default:
 		}
 
 		for _, bw := range s.BoltWorkers {
