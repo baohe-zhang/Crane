@@ -48,10 +48,10 @@ func NextTuple(tuple []interface{}, result *[]interface{}, variables *[]interfac
 	counterMap = (*variables)[0].(map[string]interface{})
 
 	// Logic
-	if counterMap["counter"].(int) < 201 {
-		*result = []interface{}{words[counterMap["counter"].(int) % len(words)]}
+	if counterMap["counter"].(float64) < 201 {
+		*result = []interface{}{words[int(counterMap["counter"].(float64)) % len(words)]}
 		fmt.Printf("spout emit: (%v)\n", *result)
-		counterMap["counter"] = counterMap["counter"].(int) + 1
+		counterMap["counter"] = counterMap["counter"].(float64) + 1
 	}
 	time.Sleep(100 * time.Millisecond)
 
