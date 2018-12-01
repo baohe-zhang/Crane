@@ -310,6 +310,7 @@ func (bw *BoltWorker) TalkWithSupervisor() {
 			// Notify the supervisor it serialized the variables
 			time.Sleep(time.Duration(utils.Hash(bw.Name) % 10) * 100 * time.Millisecond) 
 			bw.WorkerC <- fmt.Sprintf("1. %s Serialized Variables With Version %s", bw.Name, version)
+			fmt.Println("lalalal")
 
 		case "2":
 			bw.wg.Done()
