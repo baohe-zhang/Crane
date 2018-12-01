@@ -158,7 +158,7 @@ func (d *Driver) BuildTopology(topo *topology.Topology) {
 		}
 	}
 
-	d.TaskSum = count
+	d.TaskSum = count + 1
 
 	time.Sleep(10 * time.Second) // Sleep 10s to ensure all supervisors fetch the .so file
 
