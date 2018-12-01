@@ -220,6 +220,7 @@ func (s *Supervisor) SendSerializeRequestToWorkers(version string) {
 	// 1. Serialized Variables With Version X          Worker -> Supervisor
 	// 2. W Suspended                                  Worker -> Supervisor
 
+	fmt.Println("Send Serialize Request to Workers")
 	for _, bw := range s.BoltWorkers {
 		bw.SupervisorC <- fmt.Sprintf("1. Please Serialize Variables With Version %s", version)
 	}
@@ -230,6 +231,7 @@ func (s *Supervisor) SendSerializeRequestToWorkers(version string) {
 
 // Notify all workers to kill themselves
 func (s *Supervisor) SendKillRequestToWorkers() {
+	fmt.Println("Send Kill Request to Workers")
 	for _, bw := range s.BoltWorkers {
 		bw.SupervisorC <- fmt.Sprintf("2. Please Kill Yourself")
 	}
@@ -240,6 +242,7 @@ func (s *Supervisor) SendKillRequestToWorkers() {
 
 // Ask spout to suspend
 func (s *Supervisor) SendSuspendRequestToWorkers() {
+	fmt.Println("Send Suspend Request to Workers")
 	for _, sw := range s.SpoutWorkers {
 		sw.SupervisorC <- fmt.Sprintf("3. Please Suspend")
 	}
@@ -247,6 +250,7 @@ func (s *Supervisor) SendSuspendRequestToWorkers() {
 
 // Ask spout to resume
 func (s *Supervisor) SendResumeRequestToWorkers() {
+	fmt.Println("Send Resume Request to Workers")
 	for _, sw := range s.SpoutWorkers {
 		sw.SupervisorC <- fmt.Sprintf("4. Please Resume")
 	}
