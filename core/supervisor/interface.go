@@ -150,6 +150,8 @@ func (s *Supervisor) ListenToWorkers() {
 	for _, bw := range s.BoltWorkers {
 		go func() {
 			for message := range bw.WorkerC {
+				fmt.Println(message)
+				fmt.Println(string(message[0]))
 				switch string(message[0]) {
 				case "1":
 					fmt.Println("hi")
@@ -168,6 +170,8 @@ func (s *Supervisor) ListenToWorkers() {
 	for _, sw := range s.SpoutWorkers {
 		go func() {
 			for message := range sw.WorkerC {
+				fmt.Println(message)
+				fmt.Println(string(message[0]))
 				switch string(message[0]) {
 				case "1":
 					fmt.Println("hi")
@@ -226,11 +230,9 @@ func (s *Supervisor) SendSerializeRequestToWorkers(version string) {
 	fmt.Println("Send Serialize Request to Workers")
 	for _, bw := range s.BoltWorkers {
 		bw.SupervisorC <- fmt.Sprintf("1. Please Serialize Variables With Version %s", version)
-		time.Sleep(20 * time.Millisecond)
 	}
 	for _, sw := range s.SpoutWorkers {
 		sw.SupervisorC <- fmt.Sprintf("1. Please Serialize Variables With Version %s", version)
-		time.Sleep(20 * time.Millisecond)
 	}
 }
 
@@ -239,11 +241,9 @@ func (s *Supervisor) SendKillRequestToWorkers() {
 	fmt.Println("Send Kill Request to Workers")
 	for _, bw := range s.BoltWorkers {
 		bw.SupervisorC <- fmt.Sprintf("2. Please Kill Yourself")
-		time.Sleep(20 * time.Millisecond)
 	}
 	for _, sw := range s.SpoutWorkers {
 		sw.SupervisorC <- fmt.Sprintf("2. Please Kill Yourself")
-		time.Sleep(20 * time.Millisecond)
 	}
 }
 
