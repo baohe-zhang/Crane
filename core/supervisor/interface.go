@@ -142,9 +142,7 @@ func (s *Supervisor) ListenToWorkers() {
 	// 2. W Suspended                                  Worker -> Supervisor
 	for _, bw := range s.BoltWorkers {
 		go func() {
-			fmt.Println("xixi")
 			for message := range bw.SupervisorC {
-				fmt.Println("hello")
 				switch string(message[0]) {
 				case "1":
 					fmt.Println(message)
@@ -154,9 +152,7 @@ func (s *Supervisor) ListenToWorkers() {
 	}
 	for _, sw := range s.SpoutWorkers {
 		go func() {
-			fmt.Println("haha")
 			for message := range sw.SupervisorC {
-				fmt.Println("hi")
 				switch string(message[0]) {
 				case "1":
 					fmt.Println(message)

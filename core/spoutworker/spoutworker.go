@@ -91,7 +91,9 @@ func (sw *SpoutWorker) Start() {
 func (sw *SpoutWorker) receiveTuple() {
 	for {
 		if (sw.suspend == true) {
-			continue
+			var wg sync.WaitGroup
+			wg.Add(1)
+			wg.Wait()
 		}
 		var empty []interface{}
 		var tuple []interface{}
