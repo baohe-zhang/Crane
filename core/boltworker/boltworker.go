@@ -142,7 +142,7 @@ func (bw *BoltWorker) Start() {
 
 	bw.wg.Add(1)
 	bw.wg.Wait()
-	// bw.publisher.Close()
+	bw.publisher.Close()
 	fmt.Printf("Bolt Worker %s Terminates\n", bw.Name)
 }
 
@@ -296,11 +296,6 @@ func (bw *BoltWorker) DeserializeVariables(version string) {
 	// Deserialize to get each executor's variables
 	for index, bin := range bins {
 		bw.executors[index].variables = bin.([]interface{})
-	}
-
-	// Test log
-	for idx, executor := range bw.executors {
-		fmt.Printf("%s %dth executor's variables: %v", bw.Name, idx, executor.variables)
 	}
 }
 
