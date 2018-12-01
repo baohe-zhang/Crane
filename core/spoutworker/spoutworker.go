@@ -206,7 +206,7 @@ func (sw *SpoutWorker) TalkWithSupervisor() {
 			sw.SerializeVariables(version)
 			fmt.Printf("Serialized Variables With Version %s\n", version)
 			// Notify the supervisor it serialized the variables
-			sw.SupervisorC <- fmt.Sprintf("1. %s Serialized Variables With Version %s\n", sw.Name, version)
+			sw.SupervisorC <- fmt.Sprintf("1. %s Serialized Variables With Version %s", sw.Name, version)
 
 		case "2":
 			sw.wg.Done()
@@ -214,7 +214,7 @@ func (sw *SpoutWorker) TalkWithSupervisor() {
 		case "3":
 			sw.suspend = true
 			fmt.Printf("Suspended Spout Worker\n")
-			sw.SupervisorC <- fmt.Sprint("2. %s Suspended", sw.Name)
+			sw.SupervisorC <- fmt.Sprintf("2. %s Suspended", sw.Name)
 		}
 	}
 }
