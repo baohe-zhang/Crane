@@ -147,46 +147,49 @@ func (s *Supervisor) ListenToWorkers() {
 	// Worker -> Supervisor
 	// 1. Serialized Variables With Version X          Worker -> Supervisor
 	// 2. W Suspended                                  Worker -> Supervisor
+	
 	for _, bw := range s.BoltWorkers {
-		fmt.Println("woshi")
 		go func() {
-			for message := range bw.WorkerC {
-				fmt.Println(message)
-				fmt.Println(string(message[0]))
-				switch string(message[0]) {
-				case "1":
-					fmt.Println("hi")
-					s.SerializeResponseCounter += 1
-					if (s.SerializeResponseCounter == (len(s.BoltWorkers) + len(s.SpoutWorkers))) {
-						s.SerializeResponseCounter = 0
-						s.SendSerializeResponseToDriver()
-						s.SendResumeRequestToWorkers()
+			for {
+				select {
+				case message := <- bw.WorkerC:
+					switch string(message[0]) {
+					case "1":
+						fmt.Println("hi")
+						s.SerializeResponseCounter += 1
+						if (s.SerializeResponseCounter == (len(s.BoltWorkers) + len(s.SpoutWorkers))) {
+							s.SerializeResponseCounter = 0
+							s.SendSerializeResponseToDriver()
+							s.SendResumeRequestToWorkers()
+						}
 					}
 				}
 			}
 		}()
 	}
+
 	for _, sw := range s.SpoutWorkers {
-		fmt.Println("shabi")
 		go func() {
-			for message := range sw.WorkerC {
-				fmt.Println(message)
-				fmt.Println(string(message[0]))
-				switch string(message[0]) {
-				case "1":
-					fmt.Println("hi")
-					s.SerializeResponseCounter += 1
-					if (s.SerializeResponseCounter == (len(s.BoltWorkers) + len(s.SpoutWorkers))) {
-						s.SerializeResponseCounter = 0
-						s.SendSerializeResponseToDriver()
-						s.SendResumeRequestToWorkers()
+			for {
+				select {
+				case message := <-sw.WorkerC:
+					switch string(message[0]) {
+					case "1":
+						fmt.Println("hi")
+						s.SerializeResponseCounter += 1
+						if (s.SerializeResponseCounter == (len(s.BoltWorkers) + len(s.SpoutWorkers))) {
+							s.SerializeResponseCounter = 0
+							s.SendSerializeResponseToDriver()
+							s.SendResumeRequestToWorkers()
+						}
+					case "2":
+						s.SendSuspendResponseToDriver()
 					}
-				case "2":
-					s.SendSuspendResponseToDriver()
 				}
 			}
 		}()
 	}
+
 	fmt.Println("Listening To Workers")
 	var wg sync.WaitGroup
 	wg.Add(1)
