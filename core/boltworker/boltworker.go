@@ -332,19 +332,24 @@ func (bw *BoltWorker) TalkWithSupervisor() {
 			fmt.Println("Recovered in f", r)
 		}
 	}()
-	for message := range bw.SupervisorC {
-		switch string(message[0]) {
-		case "1":
-			words := strings.Fields(message)
-			version := words[len(words)-1]
-			bw.SerializeVariables(version)
-			bw.Version = version
-			fmt.Printf("%s Serialize Variables With Version %s\n", bw.Name, version)
-			// Notify the supervisor it serialized the variables
-			bw.WorkerC <- fmt.Sprintf("1. %s Serialized Variables With Version %s", bw.Name, version)
 
-		case "2":
-			bw.wg.Done()
+	for {
+		select {
+		case message := <-bw.SupervisorC:
+			switch string(message[0]) {
+			case "1":
+				words := strings.Fields(message)
+				version := words[len(words)-1]
+				bw.SerializeVariables(version)
+				bw.Version = version
+				fmt.Printf("%s Serialize Variables With Version %s\n", bw.Name, version)
+				// Notify the supervisor it serialized the variables
+				bw.WorkerC <- fmt.Sprintf("1. %s Serialized Variables With Version %s", bw.Name, version)
+
+			case "2":
+				bw.wg.Done()
+			}
+		default:
 		}
 	}
 }
