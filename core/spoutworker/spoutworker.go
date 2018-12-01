@@ -212,7 +212,6 @@ func (sw *SpoutWorker) TalkWithSupervisor() {
 		case "3":
 			sw.suspend = true
 			fmt.Printf("Suspended Spout Worker\n")
-			time.Sleep(20 * time.Millisecond)
 			sw.SupervisorC <- fmt.Sprint("2. %s Suspended", sw.Name)
 		}
 	}
