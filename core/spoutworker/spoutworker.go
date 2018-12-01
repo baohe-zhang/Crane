@@ -30,11 +30,12 @@ type SpoutWorker struct {
 	rwmutex sync.RWMutex
 	wg sync.WaitGroup
 	SupervisorC chan string
+	WorkerC chan string
 	suspend bool
 }
 
 func NewSpoutWorker(name string, pluginFilename string, pluginSymbol string, port string, 
-					sucGrouping string, sucField int, supervisorC chan string) *SpoutWorker {
+					sucGrouping string, sucField int, supervisorC chan string, workerC chan string) *SpoutWorker {
 
 	procFunc := utils.LookupProcFunc(pluginFilename, pluginSymbol)
 
@@ -58,6 +59,7 @@ func NewSpoutWorker(name string, pluginFilename string, pluginSymbol string, por
 		sucField: sucField,
 		sucIndexMap: sucIndexMap,
 		SupervisorC: supervisorC,
+		WorkerC: workerC,
 		suspend: false,
 	}
 
@@ -206,7 +208,7 @@ func (sw *SpoutWorker) TalkWithSupervisor() {
 			sw.SerializeVariables(version)
 			fmt.Printf("Serialized Variables With Version %s\n", version)
 			// Notify the supervisor it serialized the variables
-			sw.SupervisorC <- fmt.Sprintf("1. %s Serialized Variables With Version %s", sw.Name, version)
+			sw.WorkerC <- fmt.Sprintf("1. %s Serialized Variables With Version %s", sw.Name, version)
 
 		case "2":
 			sw.wg.Done()
@@ -214,7 +216,7 @@ func (sw *SpoutWorker) TalkWithSupervisor() {
 		case "3":
 			sw.suspend = true
 			fmt.Printf("Suspended Spout Worker\n")
-			sw.SupervisorC <- fmt.Sprintf("2. %s Suspended", sw.Name)
+			sw.WorkerC <- fmt.Sprintf("2. %s Suspended", sw.Name)
 		}
 	}
 }

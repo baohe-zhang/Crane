@@ -36,6 +36,7 @@ type BoltWorker struct {
 	rwmutex sync.RWMutex
 	wg sync.WaitGroup
 	SupervisorC chan string
+	WorkerC chan string
 }
 
 type Executor struct {
@@ -51,7 +52,7 @@ func NewBoltWorker(numWorkers int, name string,
 					port string, subAddrs []string, 
 					preGrouping string, preField int, 
 					sucGrouping string, sucField int, 
-					supervisorC chan string) *BoltWorker {
+					supervisorC chan string, workerC chan string) *BoltWorker {
 
 	tuples := make(chan []interface{}, BUFLEN)
 	results := make(chan []interface{}, BUFLEN)
@@ -96,6 +97,7 @@ func NewBoltWorker(numWorkers int, name string,
 		sucField: sucField,
 		sucIndexMap: sucIndexMap,
 		SupervisorC: supervisorC,
+		WorkerC: workerC,
 	}
 
 	return bw
@@ -314,7 +316,7 @@ func (bw *BoltWorker) TalkWithSupervisor() {
 			fmt.Printf("Serialize Variables With Version %s\n", version)
 			bw.SerializeVariables(version)
 			// Notify the supervisor it serialized the variables
-			bw.SupervisorC <- fmt.Sprintf("%s Serialized Variables With Version %s\n", bw.Name, version)
+			bw.WorkerC <- fmt.Sprintf("%s Serialized Variables With Version %s\n", bw.Name, version)
 
 		case "2":
 			bw.wg.Done()

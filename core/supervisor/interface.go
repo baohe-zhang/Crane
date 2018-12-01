@@ -60,10 +60,11 @@ func (s *Supervisor) StartDaemon() {
 			task := &utils.BoltTaskMessage{}
 			utils.Unmarshal(payload.Content, task)
 			log.Printf("Receive Bolt Dispatch %s with Port %s, Previous workers %v\n", task.Name, task.Port, task.PrevBoltAddr)
-			supervisorC := make(chan string, 100) // Channel to communicate with the worker
+			supervisorC := make(chan string, 100) // Channel to talk to the worker
+			workerC := make(chan string, 100) // Channel to listen to the worker
 			bw := boltworker.NewBoltWorker(10, task.Name, "./"+task.PluginFile, task.PluginSymbol, 
 				task.Port, task.PrevBoltAddr, task.PrevBoltGroupingHint, task.PrevBoltFieldIndex,
-				task.SuccBoltGroupingHint, task.SuccBoltFieldIndex, supervisorC)
+				task.SuccBoltGroupingHint, task.SuccBoltFieldIndex, supervisorC, workerC)
 			s.BoltWorkers = append(s.BoltWorkers, bw)
 
 		case utils.SPOUT_TASK:
@@ -71,8 +72,9 @@ func (s *Supervisor) StartDaemon() {
 			utils.Unmarshal(payload.Content, task)
 			log.Printf("Receive Spout Dispatch %s with Port %s\n", task.Name, task.Port)
 			supervisorC := make(chan string, 100)
+			workerC := make(chan string, 100)
 			sw := spoutworker.NewSpoutWorker(task.Name, "./"+task.PluginFile, task.PluginSymbol, task.Port, 
-				task.GroupingHint, task.FieldIndex, supervisorC)
+				task.GroupingHint, task.FieldIndex, supervisorC, workerC)
 			s.SpoutWorkers = append(s.SpoutWorkers, sw)
 
 		case utils.TASK_ALL_DISPATCHED:
@@ -142,7 +144,7 @@ func (s *Supervisor) ListenToWorkers() {
 	// 2. W Suspended                                  Worker -> Supervisor
 	for _, bw := range s.BoltWorkers {
 		go func() {
-			for message := range bw.SupervisorC {
+			for message := range bw.WorkerC {
 				switch string(message[0]) {
 				case "1":
 					fmt.Println(message)
@@ -152,7 +154,7 @@ func (s *Supervisor) ListenToWorkers() {
 	}
 	for _, sw := range s.SpoutWorkers {
 		go func() {
-			for message := range sw.SupervisorC {
+			for message := range sw.WorkerC {
 				switch string(message[0]) {
 				case "1":
 					fmt.Println(message)
@@ -169,6 +171,7 @@ func (s *Supervisor) ListenToWorkers() {
 	wg.Wait()
 }
 
+// Notify the driver that the spout is suspended
 func (s *Supervisor) SendSuspendResponseToDriver() {
 	fmt.Println("Send suspend reponse to driver")
 	b, _ := utils.Marshal(utils.SUSPEND_RESPONSE, "OK")
