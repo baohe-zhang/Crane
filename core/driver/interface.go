@@ -157,7 +157,6 @@ func (d *Driver) BuildTopology(topo *topology.Topology) {
 	addrs := make(map[int][]interface{})
 	d.GenTopologyMessages("None", &visited, &count, &addrs)
 	d.PrintTopology("None", 0)
-	fmt.Println(addrs)
 	// Stage 1 : Send pull request to supervisor to pull the file needed
 	// including the plugin file and state files for restoring
 	if d.SnapshotVersion == 0 {
@@ -180,6 +179,7 @@ func (d *Driver) BuildTopology(topo *topology.Topology) {
 		keys = append(keys, k)
 	}
 	sort.Ints(keys)
+	log.Println("Supervisors", addrs, keys)
 
 	count = 1
 	if d.SnapshotVersion > 0 {
@@ -211,7 +211,7 @@ func (d *Driver) BuildTopology(topo *topology.Topology) {
 		}
 	}
 
-	time.Sleep(5 * time.Second) // Sleep 10s to ensure all supervisors fetch the .so file
+	time.Sleep(8 * time.Second) // Sleep 10s to ensure all supervisors fetch the .so file
 
 	// Stage 2 : Send the task message information to supervisors
 	count = 1
