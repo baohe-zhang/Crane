@@ -155,14 +155,12 @@ func (s *Supervisor) ListenToWorkers() {
 				switch string(message[0]) {
 				case "1":
 					fmt.Println("hi")
-					s.Mutex.Lock()
 					s.SerializeResponseCounter += 1
 					if (s.SerializeResponseCounter == (len(s.BoltWorkers) + len(s.SpoutWorkers))) {
 						s.SerializeResponseCounter = 0
 						s.SendSerializeResponseToDriver()
 						s.SendResumeRequestToWorkers()
 					}
-					s.Mutex.Unlock()
 				}
 			}
 		}()
@@ -175,14 +173,12 @@ func (s *Supervisor) ListenToWorkers() {
 				switch string(message[0]) {
 				case "1":
 					fmt.Println("hi")
-					s.Mutex.Lock()
 					s.SerializeResponseCounter += 1
 					if (s.SerializeResponseCounter == (len(s.BoltWorkers) + len(s.SpoutWorkers))) {
 						s.SerializeResponseCounter = 0
 						s.SendSerializeResponseToDriver()
 						s.SendResumeRequestToWorkers()
 					}
-					s.Mutex.Unlock()
 				case "2":
 					s.SendSuspendResponseToDriver()
 				}
