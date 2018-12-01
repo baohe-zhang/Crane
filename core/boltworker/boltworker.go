@@ -142,7 +142,7 @@ func (bw *BoltWorker) Start() {
 
 	bw.wg.Add(1)
 	bw.wg.Wait()
-	bw.publisher.Close()
+	// bw.publisher.Close()
 	fmt.Printf("Bolt Worker %s Terminates\n", bw.Name)
 }
 
