@@ -43,7 +43,7 @@ func NewDriver(addr string) *Driver {
 	driver.VersionCtlTimer = make(map[int]*time.Timer)
 	driver.SuspendResponseCount = 0
 	driver.SnapshotResponseCount = 0
-	driver.SnapshotVersion = -1
+	driver.SnapshotVersion = 0
 	return driver
 }
 
