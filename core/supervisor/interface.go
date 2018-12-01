@@ -86,7 +86,7 @@ func (s *Supervisor) StartDaemon() {
 				s.SpoutWorkers = append(s.SpoutWorkers, sw)
 
 			case utils.TASK_ALL_DISPATCHED:
-				fmt.Printf("Receive Bolt and Spout Dispatchs\n")
+				fmt.Printf("Receive Bolt or Spout Dispatchs\n")
 				for _, sw := range s.SpoutWorkers {
 					go sw.Start()
 				}
@@ -115,6 +115,7 @@ func (s *Supervisor) StartDaemon() {
 				s.SpoutWorkers = make([]*spoutworker.SpoutWorker, 0)
 			}
 		default:
+			time.Sleep(10 * time.Millisecond)
 		}
 	}
 
@@ -168,8 +169,8 @@ func (s *Supervisor) ListenToWorkers() {
 						s.SendResumeRequestToWorkers()
 					}
 				}
-
 			default:
+				time.Sleep(20 * time.Millisecond)
 			}
 		}
 
@@ -195,6 +196,7 @@ func (s *Supervisor) ListenToWorkers() {
 					s.SendSuspendResponseToDriver()
 				}
 			default:
+				time.Sleep(20 * time.Millisecond)
 			}
 		}
 

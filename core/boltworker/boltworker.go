@@ -119,9 +119,6 @@ func (bw *BoltWorker) Start() {
 
 	fmt.Printf("bolt worker %s start\n", bw.Name)
 
-	// Start channel with supervisor
-	go bw.TalkWithSupervisor()
-
 	// Start publisher
 	bw.publisher = messages.NewPublisher(":" + bw.port)
 	go bw.publisher.AcceptConns()
@@ -137,6 +134,9 @@ func (bw *BoltWorker) Start() {
 	time.Sleep(1 * time.Second) // Wait for all subscriber established
 
 	bw.buildSucIndexMap()
+
+	// Start channel with supervisor
+	go bw.TalkWithSupervisor()
 
 	go bw.receiveTuple()
 	go bw.distributeTuple()
@@ -350,6 +350,7 @@ func (bw *BoltWorker) TalkWithSupervisor() {
 				bw.wg.Done()
 			}
 		default:
+			time.Sleep(5 * time.Millisecond)
 		}
 	}
 }
