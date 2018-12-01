@@ -320,7 +320,7 @@ func (bw *BoltWorker) TalkWithSupervisor() {
 			fmt.Printf("Serialize Variables With Version %s\n", version)
 			bw.SerializeVariables(version)
 			// Notify the supervisor it serialized the variables
-			bw.WorkerC <- fmt.Sprintf("%s Serialized Variables With Version %s\n", bw.Name, version)
+			bw.WorkerC <- fmt.Sprintf("1. %s Serialized Variables With Version %s\n", bw.Name, version)
 
 		case "2":
 			bw.wg.Done()
