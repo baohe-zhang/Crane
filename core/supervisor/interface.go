@@ -82,7 +82,6 @@ func (s *Supervisor) StartDaemon() {
 			s.SpoutWorkers = append(s.SpoutWorkers, sw)
 
 		case utils.TASK_ALL_DISPATCHED:
-			go s.ListenToWorkers()
 			fmt.Printf("Receive Bolt and Spout Dispatchs\n")
 			for _, sw := range s.SpoutWorkers {
 				go sw.Start()
@@ -90,6 +89,8 @@ func (s *Supervisor) StartDaemon() {
 			for _, bw := range s.BoltWorkers {
 				go bw.Start()
 			}
+			time.Sleep(20 * time.Millisecond)
+			go s.ListenToWorkers()
 
 		case utils.SUSPEND_REQUEST:
 			fmt.Printf("Receive Suspend Request From Driver\n")
@@ -225,11 +226,9 @@ func (s *Supervisor) SendSerializeRequestToWorkers(version string) {
 	fmt.Println("Send Serialize Request to Workers")
 	for _, bw := range s.BoltWorkers {
 		bw.SupervisorC <- fmt.Sprintf("1. Please Serialize Variables With Version %s", version)
-		time.Sleep(20 * time.Millisecond)
 	}
 	for _, sw := range s.SpoutWorkers {
 		sw.SupervisorC <- fmt.Sprintf("1. Please Serialize Variables With Version %s", version)
-		time.Sleep(20 * time.Millisecond)
 	}
 }
 
@@ -238,11 +237,9 @@ func (s *Supervisor) SendKillRequestToWorkers() {
 	fmt.Println("Send Kill Request to Workers")
 	for _, bw := range s.BoltWorkers {
 		bw.SupervisorC <- fmt.Sprintf("2. Please Kill Yourself")
-		time.Sleep(20 * time.Millisecond)
 	}
 	for _, sw := range s.SpoutWorkers {
 		sw.SupervisorC <- fmt.Sprintf("2. Please Kill Yourself")
-		time.Sleep(20 * time.Millisecond)
 	}
 }
 
