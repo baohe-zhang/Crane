@@ -126,6 +126,10 @@ func (d *Driver) BuildTopology(topo *topology.Topology) {
 	d.TopologyGraph = make(map[string][]interface{})
 	d.SpoutMap = make(map[string]spout.SpoutInst)
 	d.BoltMap = make(map[string]bolt.BoltInst)
+	if len(d.SupervisorIdMap) == 0 {
+		return
+	}
+
 	// build the vectors table
 	for i, _ := range topo.Bolts {
 		preVecs := topo.Bolts[i].PrevTaskNames
