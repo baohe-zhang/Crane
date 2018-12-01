@@ -88,7 +88,7 @@ func (s *Supervisor) StartDaemon() {
 				s.SpoutWorkers = append(s.SpoutWorkers, sw)
 
 			case utils.TASK_ALL_DISPATCHED:
-				fmt.Printf("Receive Bolt or Spout Dispatchs\n")
+				log.Printf("Receive Task All Dispatched, Worker Start...\n")
 				for _, sw := range s.SpoutWorkers {
 					go sw.Start()
 				}
@@ -99,25 +99,26 @@ func (s *Supervisor) StartDaemon() {
 				go s.ListenToWorkers()
 
 			case utils.SUSPEND_REQUEST:
-				fmt.Printf("Receive Suspend Request From Driver\n")
+				log.Printf("Receive Suspend Request\n")
 				s.SendSuspendRequestToWorkers()
 
 			case utils.SNAPSHOT_REQUEST:
 				var version int
 				utils.Unmarshal(payload.Content, &version)
-				fmt.Printf("Receive Snapshot Request With Version %d\n", version)
+				log.Printf("Receive Snapshot Request With Version %d\n", version)
 				s.SendSerializeRequestToWorkers(strconv.Itoa(version))
 
 			case utils.RESTORE_REQUEST:
 				s.ControlC <- "Close"
+				log.Printf("Receive Restore Request")
 				time.Sleep(100 * time.Millisecond)
 				s.SendKillRequestToWorkers()
 				// Clear supervisor's worker map
 				s.BoltWorkers = make([]*boltworker.BoltWorker, 0)
 				s.SpoutWorkers = make([]*spoutworker.SpoutWorker, 0)
 			}
-		default:
-			time.Sleep(10 * time.Millisecond)
+		// default:
+		// 	time.Sleep(10 * time.Millisecond)
 		}
 	}
 
@@ -125,6 +126,7 @@ func (s *Supervisor) StartDaemon() {
 
 // Send join request to join the cluster
 func (s *Supervisor) SendJoinRequest() {
+	log.Printf("Send Join Request")
 	join := utils.JoinRequest{Name: "vm [" + s.Sub.Conn.LocalAddr().String() + "]"}
 	b, err := utils.Marshal(utils.JOIN_REQUEST, join)
 	if err != nil {
@@ -149,14 +151,14 @@ func (s *Supervisor) ListenToWorkers() {
 	// 1. Serialized Variables With Version X          Worker -> Supervisor
 	// 2. W Suspended                                  Worker -> Supervisor
 
-	fmt.Println("Listening To Workers")
+	log.Println("Start Listen To Workers")
 
 	for {
 		for _, bw := range s.BoltWorkers {
 			select {
 			// Channel to close this goroutine
 			case signal := <-s.ControlC:
-				fmt.Printf("Receive Signal %s, function return\n", signal)
+				log.Printf("Receive Signal %s, Listen To Workers Return\n", signal)
 				return
 
 			case message := <-bw.WorkerC:
@@ -180,7 +182,7 @@ func (s *Supervisor) ListenToWorkers() {
 			select {
 			// Channel to close this goroutine
 			case signal := <-s.ControlC:
-				fmt.Printf("Receive Signal %s, function return\n", signal)
+				log.Printf("Receive Signal %s, Listen To Workers Return\n", signal)
 				return
 
 			case message := <-sw.WorkerC:
@@ -211,7 +213,7 @@ func (s *Supervisor) ListenToWorkers() {
 
 // Notify the driver that the spout is suspended
 func (s *Supervisor) SendSuspendResponseToDriver() {
-	fmt.Println("Send Suspend Reponse To Driver")
+	log.Println("Send Suspend Reponse To Driver")
 	b, _ := utils.Marshal(utils.SUSPEND_RESPONSE, "OK")
 	s.Sub.Request <- messages.Message{
 		Payload:      b,
@@ -221,7 +223,7 @@ func (s *Supervisor) SendSuspendResponseToDriver() {
 
 // Notify the driver that the serialize is finished
 func (s *Supervisor) SendSerializeResponseToDriver() {
-	fmt.Println("Send Serialize Reponse To Driver")
+	log.Println("Send Serialize Reponse To Driver")
 	b, _ := utils.Marshal(utils.SNAPSHOT_RESPONSE, "OK")
 	s.Sub.Request <- messages.Message{
 		Payload:      b,
@@ -241,7 +243,7 @@ func (s *Supervisor) SendSerializeRequestToWorkers(version string) {
 	// 1. Serialized Variables With Version X          Worker -> Supervisor
 	// 2. W Suspended                                  Worker -> Supervisor
 
-	fmt.Println("Send Serialize Request to Workers")
+	log.Println("Send Serialize Request to Workers")
 	for _, bw := range s.BoltWorkers {
 		bw.SupervisorC <- fmt.Sprintf("1. Please Serialize Variables With Version %s", version)
 	}
@@ -252,7 +254,7 @@ func (s *Supervisor) SendSerializeRequestToWorkers(version string) {
 
 // Notify all workers to kill themselves
 func (s *Supervisor) SendKillRequestToWorkers() {
-	fmt.Println("Send Kill Request to Workers")
+	log.Println("Send Kill Request to Workers")
 	for _, bw := range s.BoltWorkers {
 		bw.SupervisorC <- fmt.Sprintf("2. Please Kill Yourself")
 	}
@@ -263,7 +265,7 @@ func (s *Supervisor) SendKillRequestToWorkers() {
 
 // Ask spout to suspend
 func (s *Supervisor) SendSuspendRequestToWorkers() {
-	fmt.Println("Send Suspend Request to Workers")
+	log.Println("Send Suspend Request to Spout Workers")
 	for _, sw := range s.SpoutWorkers {
 		sw.SupervisorC <- fmt.Sprintf("3. Please Suspend")
 	}
@@ -271,7 +273,7 @@ func (s *Supervisor) SendSuspendRequestToWorkers() {
 
 // Ask spout to resume
 func (s *Supervisor) SendResumeRequestToWorkers() {
-	fmt.Println("Send Resume Request to Workers")
+	log.Println("Send Resume Request to Spout Workers")
 	for _, sw := range s.SpoutWorkers {
 		sw.SupervisorC <- fmt.Sprintf("4. Please Resume")
 	}
@@ -286,27 +288,28 @@ func (s *Supervisor) GetFile(remoteName string) {
 	// Execute the sdfs client to get the remote file
 	usr, _ := user.Current()
 	usrHome := usr.HomeDir
-	cmd := exec.Command(usrHome+"/go/src/crane/tools/sdfs_client/sdfs_client", "-master", "fa18-cs425-g29-01.cs.illinois.edu:5000", "get", remoteName, "./"+remoteName)
-	stdoutStderr, err := cmd.CombinedOutput()
-	if err != nil {
-		log.Fatal(err)
-	}
-	fmt.Printf("%s\n", stdoutStderr)
+	exec.Command(usrHome+"/go/src/crane/tools/sdfs_client/sdfs_client", "-master", "fa18-cs425-g29-01.cs.illinois.edu:5000", "get", remoteName, "./"+remoteName)
+	// stdoutStderr, err := cmd.CombinedOutput()
+	// if err != nil {
+	// 	log.Fatal(err)
+	// }
+	// fmt.Printf("%s\n", stdoutStderr)
 	s.FilePathMap[remoteName] = "./" + remoteName
+	log.Printf("Get File %s", remoteName)
 }
 
 // Put State File into Distributed File System
 func (s *Supervisor) PutFile(localPath, remoteName string) {
-	time.Sleep(2 * time.Second)
 	// Execute the sdfs client to put the local file into remote
 	usr, _ := user.Current()
 	usrHome := usr.HomeDir
-	cmd := exec.Command(usrHome+"/go/src/crane/tools/sdfs_client/sdfs_client", "-master", "fa18-cs425-g29-01.cs.illinois.edu:5000", "put", localPath, remoteName)
-	stdoutStderr, err := cmd.CombinedOutput()
-	if err != nil {
-		log.Fatal(err)
-	}
-	fmt.Printf("%s\n", stdoutStderr)
+	exec.Command(usrHome+"/go/src/crane/tools/sdfs_client/sdfs_client", "-master", "fa18-cs425-g29-01.cs.illinois.edu:5000", "put", localPath, remoteName)
+	// stdoutStderr, err := cmd.CombinedOutput()
+	// if err != nil {
+	// 	log.Fatal(err)
+	// }
+	// fmt.Printf("%s\n", stdoutStderr)
+	log.Printf("Put File %s", remoteName)
 }
 
 func main() {

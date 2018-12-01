@@ -81,7 +81,7 @@ func (sw *SpoutWorker) Start() {
 	defer close(sw.SupervisorC)
 	defer close(sw.WorkerC)
 
-	fmt.Printf("spout worker %s start\n", sw.Name)
+	log.Printf("Spout Worker %s Start\n", sw.Name)
 
 	// Start channel with supervisor
 	go sw.TalkWithSupervisor()
@@ -100,7 +100,7 @@ func (sw *SpoutWorker) Start() {
 	sw.wg.Add(1)
 	sw.wg.Wait()
 	sw.publisher.Close()
-	fmt.Printf("Spout Worker %s Terminates\n", sw.Name)
+	log.Printf("Spout Worker %s Terminates\n", sw.Name)
 }
 
 // Receive tuple from input stream
@@ -179,7 +179,7 @@ func (sw *SpoutWorker) buildSucIndexMap() {
 
 // Serialize and store variables into local file
 func (sw *SpoutWorker) SerializeVariables(version string) {
-	fmt.Printf("%s start serializing version %s\n", sw.Name, version)
+	log.Printf("%s Start Serializing Variables With Version %s\n", sw.Name, version)
 	// Create file to store
 	filename := fmt.Sprintf("%s_%s", sw.Name, version)
 	file, err := os.Create(filename)
@@ -190,14 +190,14 @@ func (sw *SpoutWorker) SerializeVariables(version string) {
 	defer file.Close()
 
 	// Store variable's binary value into the file
-	fmt.Printf("Serialize variables %v\n", sw.variables)
+	log.Printf("%s Serialize Variables %v\n", sw.Name, sw.variables)
 	b, _ := json.Marshal(sw.variables)
 	file.Write(b)
 }
 
 // Deserialize variables from local file
 func (sw *SpoutWorker) DeserializeVariables(version string) {
-	fmt.Printf("%s start deserializing version %s\n", sw.Name, version)
+	log.Printf("%s Start Deserializing Variables With Version %s\n", sw.Name, version)
 	// Open the local file that stores the variables' binary value
 	filename := fmt.Sprintf("%s_%s", sw.Name, version)
 	b, err := ioutil.ReadFile("./" + filename)
@@ -212,7 +212,7 @@ func (sw *SpoutWorker) DeserializeVariables(version string) {
 
 	// Deserialize to get variables
 	sw.variables = variables.([]interface{})
-	fmt.Printf("Deserialize variables %v\n", sw.variables)
+	log.Printf("%s Deserialize Variables %v\n", sw.Name, sw.variables)
 }
 
 // The channel to communicate with the supervisor
@@ -241,7 +241,6 @@ func (sw *SpoutWorker) TalkWithSupervisor() {
 				version := words[len(words)-1]
 				sw.SerializeVariables(version)
 				sw.Version = version
-				fmt.Printf("%s Serialized Variables With Version %s\n", sw.Name, version)
 				// Notify the supervisor it serialized the variables
 				sw.WorkerC <- fmt.Sprintf("1. %s Serialized Variables With Version %s", sw.Name, version)
 
@@ -251,13 +250,13 @@ func (sw *SpoutWorker) TalkWithSupervisor() {
 			case "3":
 				sw.suspend = true
 				sw.suspendWg.Add(1)
-				fmt.Printf("%s Suspended\n", sw.Name)
+				log.Printf("%s Suspended\n", sw.Name)
 				sw.WorkerC <- fmt.Sprintf("2. %s Suspended", sw.Name)
 
 			case "4":
 				sw.suspend = false
 				sw.suspendWg.Done()
-				fmt.Printf("%s Resumeed\n", sw.Name)
+				log.Printf("%s Resumeed\n", sw.Name)
 			}
 		default:
 		}
