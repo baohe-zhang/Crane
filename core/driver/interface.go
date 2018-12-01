@@ -57,7 +57,6 @@ func (d *Driver) StartDaemon() {
 			d.Pub.RWLock.RLock()
 			select {
 			case supervisorMsg := <-channel:
-				log.Printf("Message from %s: %s\n", connId, supervisorMsg.Payload)
 				payload := utils.CheckType(supervisorMsg.Payload)
 				log.Printf("Receiving %s request form %s\n", payload.Header.Type, connId)
 				// parse the header information
