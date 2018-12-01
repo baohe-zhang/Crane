@@ -1,60 +1,60 @@
-package boltworker 
+package boltworker
 
 import (
-	"fmt"
-	"sync"
-	"time"
-	"encoding/json"
-	"net"
 	"crane/core/messages"
 	"crane/core/utils"
-	"os"
+	"encoding/json"
+	"fmt"
 	"io/ioutil"
-	"strings"
+	"net"
+	"os"
 	"strconv"
+	"strings"
+	"sync"
+	"time"
 )
 
 const (
-	BUFLEN = 100
+	BUFLEN   = 100
 	BUFFSIZE = 1024
 )
 
 type BoltWorker struct {
-	Name string
-	numWorkers int
-	executors []*Executor
-	tuples chan []interface{}
-	results chan []interface{}
-	port string
-	subAddrs []string
-	publisher *messages.Publisher
+	Name        string
+	numWorkers  int
+	executors   []*Executor
+	tuples      chan []interface{}
+	results     chan []interface{}
+	port        string
+	subAddrs    []string
+	publisher   *messages.Publisher
 	subscribers []*messages.Subscriber
 	preGrouping string
-	preField int
+	preField    int
 	sucGrouping string
-	sucField int
+	sucField    int
 	sucIndexMap map[int]string
-	rwmutex sync.RWMutex
-	wg sync.WaitGroup
+	rwmutex     sync.RWMutex
+	wg          sync.WaitGroup
 	SupervisorC chan string
-	WorkerC chan string
-	Version string
+	WorkerC     chan string
+	Version     string
 }
 
 type Executor struct {
-	id int
+	id        int
 	available bool
-	results chan []interface{}
-	procFunc func([]interface{}, *[]interface{}, *[]interface{}) error
+	results   chan []interface{}
+	procFunc  func([]interface{}, *[]interface{}, *[]interface{}) error
 	variables []interface{}
 }
 
-func NewBoltWorker(numWorkers int, name string, 
-					pluginFilename string, pluginSymbol string, 
-					port string, subAddrs []string, 
-					preGrouping string, preField int, 
-					sucGrouping string, sucField int, 
-					supervisorC chan string, workerC chan string, version int) *BoltWorker {
+func NewBoltWorker(numWorkers int, name string,
+	pluginFilename string, pluginSymbol string,
+	port string, subAddrs []string,
+	preGrouping string, preField int,
+	sucGrouping string, sucField int,
+	supervisorC chan string, workerC chan string, version int) *BoltWorker {
 
 	tuples := make(chan []interface{}, BUFLEN)
 	results := make(chan []interface{}, BUFLEN)
@@ -66,11 +66,11 @@ func NewBoltWorker(numWorkers int, name string,
 	executors := make([]*Executor, 0)
 	for i := 0; i < numWorkers; i++ {
 		variables := make([]interface{}, 0) // Store bolt's global variables
-		executor := &Executor {
-			id: i,
+		executor := &Executor{
+			id:        i,
 			available: true,
-			results: results,
-			procFunc: procFunc,
+			results:   results,
+			procFunc:  procFunc,
 			variables: variables,
 		}
 		executors = append(executors, executor)
@@ -84,26 +84,26 @@ func NewBoltWorker(numWorkers int, name string,
 	sucIndexMap := make(map[int]string)
 
 	bw := &BoltWorker{
-		Name: name, 
-		numWorkers: numWorkers,
-		executors: executors,
-		tuples: tuples,
-		results: results,
-		port: port,
-		subAddrs: subAddrs,
-		publisher: publisher,
+		Name:        name,
+		numWorkers:  numWorkers,
+		executors:   executors,
+		tuples:      tuples,
+		results:     results,
+		port:        port,
+		subAddrs:    subAddrs,
+		publisher:   publisher,
 		subscribers: subscribers,
 		preGrouping: preGrouping,
-		preField: preField,
+		preField:    preField,
 		sucGrouping: sucGrouping,
-		sucField: sucField,
+		sucField:    sucField,
 		sucIndexMap: sucIndexMap,
 		SupervisorC: supervisorC,
-		WorkerC: workerC,
+		WorkerC:     workerC,
 	}
 
 	// Start from restore, read state file to get variables
-	if (version > 0) {
+	if version > 0 {
 		bw.DeserializeVariables(strconv.Itoa(version))
 	}
 	bw.Version = strconv.Itoa(version)
@@ -112,10 +112,10 @@ func NewBoltWorker(numWorkers int, name string,
 }
 
 func (bw *BoltWorker) Start() {
-	defer close(bw.tuples)
-	defer close(bw.results)
 	defer close(bw.SupervisorC)
 	defer close(bw.WorkerC)
+	defer close(bw.tuples)
+	defer close(bw.results)
 
 	fmt.Printf("bolt worker %s start\n", bw.Name)
 
@@ -123,11 +123,11 @@ func (bw *BoltWorker) Start() {
 	go bw.TalkWithSupervisor()
 
 	// Start publisher
-	bw.publisher = messages.NewPublisher(":"+bw.port)
+	bw.publisher = messages.NewPublisher(":" + bw.port)
 	go bw.publisher.AcceptConns()
 	go bw.publisher.PublishMessage(bw.publisher.PublishBoard)
 	time.Sleep(1 * time.Second) // Wait for all boltWorkers' publisher established
-	
+
 	// Start subscribers
 	for _, subAddr := range bw.subAddrs {
 		subscriber := messages.NewSubscriber(subAddr)
@@ -149,14 +149,23 @@ func (bw *BoltWorker) Start() {
 }
 
 func (bw *BoltWorker) receiveTuple() {
-	for _, subscriber := range bw.subscribers {
-		go func() {
-			for msg := range subscriber.PublishBoard {
+	defer func() {
+		if r := recover(); r != nil {
+			fmt.Println("Recovered in f", r)
+		}
+	}()
+	for {
+		for _, subscriber := range bw.subscribers {
+			select {
+			case msg, ok := <-subscriber.PublishBoard:
+				if !ok {
+					return
+				}
 				var tuple []interface{}
 				json.Unmarshal(msg.Payload, &tuple)
 				bw.tuples <- tuple
 			}
-		}()
+		}
 	}
 }
 
@@ -207,6 +216,11 @@ func (e *Executor) processTuple(tuple []interface{}) {
 }
 
 func (bw *BoltWorker) outputTuple() {
+	defer func() {
+		if r := recover(); r != nil {
+			fmt.Println("Recovered in f", r)
+		}
+	}()
 	switch bw.sucGrouping {
 	case utils.GROUPING_BY_SHUFFLE:
 		count := 0
@@ -217,7 +231,7 @@ func (bw *BoltWorker) outputTuple() {
 			sucConnId := bw.sucIndexMap[sucid]
 			bw.rwmutex.RUnlock()
 			bw.publisher.PublishBoard <- messages.Message{
-				Payload: bin,
+				Payload:      bin,
 				TargetConnId: sucConnId,
 			}
 			count++
@@ -230,7 +244,7 @@ func (bw *BoltWorker) outputTuple() {
 			sucConnId := bw.sucIndexMap[sucid]
 			bw.rwmutex.RUnlock()
 			bw.publisher.PublishBoard <- messages.Message{
-				Payload: bin,
+				Payload:      bin,
 				TargetConnId: sucConnId,
 			}
 		}
@@ -239,7 +253,7 @@ func (bw *BoltWorker) outputTuple() {
 			bin, _ := json.Marshal(result)
 			bw.publisher.Pool.Range(func(id string, conn net.Conn) {
 				bw.publisher.PublishBoard <- messages.Message{
-					Payload: bin,
+					Payload:      bin,
 					TargetConnId: id,
 				}
 			})
@@ -313,11 +327,16 @@ func (bw *BoltWorker) TalkWithSupervisor() {
 	// 1. Serialized Variables With Version X          Worker -> Supervisor
 	// 2. W Suspended                                  Worker -> Supervisor
 
+	defer func() {
+		if r := recover(); r != nil {
+			fmt.Println("Recovered in f", r)
+		}
+	}()
 	for message := range bw.SupervisorC {
 		switch string(message[0]) {
 		case "1":
 			words := strings.Fields(message)
-			version := words[len(words) - 1]
+			version := words[len(words)-1]
 			bw.SerializeVariables(version)
 			bw.Version = version
 			fmt.Printf("%s Serialize Variables With Version %s\n", bw.Name, version)
@@ -329,8 +348,3 @@ func (bw *BoltWorker) TalkWithSupervisor() {
 		}
 	}
 }
-
-
-
-
-

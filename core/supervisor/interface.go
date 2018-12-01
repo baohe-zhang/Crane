@@ -10,22 +10,22 @@ import (
 	"log"
 	"os/exec"
 	"os/user"
-	"time"
-	"sync"
 	"strconv"
+	"sync"
+	"time"
 )
 
 // Supervisor, the slave node for accepting the schedule from the master node
 // and execute the task, spouts or bolts
 type Supervisor struct {
-	Sub          *messages.Subscriber
-	BoltWorkers  []*boltworker.BoltWorker
-	SpoutWorkers []*spoutworker.SpoutWorker
-	VmIndexMap   map[int]string
-	FilePathMap  map[string]string
+	Sub                      *messages.Subscriber
+	BoltWorkers              []*boltworker.BoltWorker
+	SpoutWorkers             []*spoutworker.SpoutWorker
+	VmIndexMap               map[int]string
+	FilePathMap              map[string]string
 	SerializeResponseCounter int
-	Mutex sync.Mutex
-	ControlC     chan string
+	Mutex                    sync.Mutex
+	ControlC                 chan string
 }
 
 // Factory mode to return the Supervisor instance
@@ -67,8 +67,8 @@ func (s *Supervisor) StartDaemon() {
 			utils.Unmarshal(payload.Content, task)
 			log.Printf("Receive Bolt Dispatch %s with Port %s, Previous workers %v\n", task.Name, task.Port, task.PrevBoltAddr)
 			supervisorC := make(chan string) // Channel to talk to the worker
-			workerC := make(chan string) // Channel to listen to the worker
-			bw := boltworker.NewBoltWorker(10, task.Name, "./"+task.PluginFile, task.PluginSymbol, 
+			workerC := make(chan string)     // Channel to listen to the worker
+			bw := boltworker.NewBoltWorker(10, task.Name, "./"+task.PluginFile, task.PluginSymbol,
 				task.Port, task.PrevBoltAddr, task.PrevBoltGroupingHint, task.PrevBoltFieldIndex,
 				task.SuccBoltGroupingHint, task.SuccBoltFieldIndex, supervisorC, workerC, task.SnapshotVersion)
 			s.BoltWorkers = append(s.BoltWorkers, bw)
@@ -79,7 +79,7 @@ func (s *Supervisor) StartDaemon() {
 			log.Printf("Receive Spout Dispatch %s with Port %s\n", task.Name, task.Port)
 			supervisorC := make(chan string)
 			workerC := make(chan string)
-			sw := spoutworker.NewSpoutWorker(task.Name, "./"+task.PluginFile, task.PluginSymbol, task.Port, 
+			sw := spoutworker.NewSpoutWorker(task.Name, "./"+task.PluginFile, task.PluginSymbol, task.Port,
 				task.GroupingHint, task.FieldIndex, supervisorC, workerC, task.SnapshotVersion)
 			s.SpoutWorkers = append(s.SpoutWorkers, sw)
 
@@ -111,7 +111,6 @@ func (s *Supervisor) StartDaemon() {
 			// Clear supervisor's worker map
 			s.BoltWorkers = make([]*boltworker.BoltWorker, 0)
 			s.SpoutWorkers = make([]*spoutworker.SpoutWorker, 0)
-
 		}
 	}
 }
@@ -147,21 +146,21 @@ func (s *Supervisor) ListenToWorkers() {
 	for {
 		// Channel to close this goroutine
 		select {
-		case signal := <- s.ControlC:
+		case signal := <-s.ControlC:
 			fmt.Printf("Receive Signal %s, function return\n", signal)
-			return 
+			return
 		default:
 		}
 
 		for _, bw := range s.BoltWorkers {
 			select {
-			case message := <- bw.WorkerC:
+			case message := <-bw.WorkerC:
 				fmt.Println(message)
 				switch string(message[0]) {
 				case "1":
-					go s.PutFile("./" + bw.Name + "_" + bw.Version, bw.Name + "_" + bw.Version)
+					go s.PutFile("./"+bw.Name+"_"+bw.Version, bw.Name+"_"+bw.Version)
 					s.SerializeResponseCounter += 1
-					if (s.SerializeResponseCounter == (len(s.BoltWorkers) + len(s.SpoutWorkers))) {
+					if s.SerializeResponseCounter == (len(s.BoltWorkers) + len(s.SpoutWorkers)) {
 						s.SerializeResponseCounter = 0
 						s.SendSerializeResponseToDriver()
 						s.SendResumeRequestToWorkers()
@@ -177,9 +176,9 @@ func (s *Supervisor) ListenToWorkers() {
 				fmt.Println(message)
 				switch string(message[0]) {
 				case "1":
-					go s.PutFile("./" + sw.Name + "_" + sw.Version, sw.Name + "_" + sw.Version)
+					go s.PutFile("./"+sw.Name+"_"+sw.Version, sw.Name+"_"+sw.Version)
 					s.SerializeResponseCounter += 1
-					if (s.SerializeResponseCounter == (len(s.BoltWorkers) + len(s.SpoutWorkers))) {
+					if s.SerializeResponseCounter == (len(s.BoltWorkers) + len(s.SpoutWorkers)) {
 						s.SerializeResponseCounter = 0
 						s.SendSerializeResponseToDriver()
 						s.SendResumeRequestToWorkers()
@@ -295,8 +294,6 @@ func (s *Supervisor) PutFile(localPath, remoteName string) {
 	}
 	fmt.Printf("%s\n", stdoutStderr)
 }
-
-
 
 func main() {
 	driverIpPtr := flag.String("h", "127.0.0.1", "Driver's IP address")

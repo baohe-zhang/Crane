@@ -1,17 +1,18 @@
-package spoutworker 
+package spoutworker
 
 import (
-	"fmt"
-	"sync"
-	"time"
-	"encoding/json"
-	"net"
 	"crane/core/messages"
 	"crane/core/utils"
-	"os"
+	"encoding/json"
+	"fmt"
 	"io/ioutil"
-	"strings"
+	"log"
+	"net"
+	"os"
 	"strconv"
+	"strings"
+	"sync"
+	"time"
 )
 
 const (
@@ -19,26 +20,26 @@ const (
 )
 
 type SpoutWorker struct {
-	Name string
-	procFunc func([]interface{}, *[]interface{}, *[]interface{}) error
-	port string
-	tuples chan []interface{}
-	variables []interface{}
-	publisher *messages.Publisher
+	Name        string
+	procFunc    func([]interface{}, *[]interface{}, *[]interface{}) error
+	port        string
+	tuples      chan []interface{}
+	variables   []interface{}
+	publisher   *messages.Publisher
 	sucGrouping string
-	sucField int
+	sucField    int
 	sucIndexMap map[int]string
-	rwmutex sync.RWMutex
-	wg sync.WaitGroup
+	rwmutex     sync.RWMutex
+	wg          sync.WaitGroup
 	SupervisorC chan string
-	WorkerC chan string
-	suspend bool
-	suspendWg sync.WaitGroup
-	Version string
+	WorkerC     chan string
+	suspend     bool
+	suspendWg   sync.WaitGroup
+	Version     string
 }
 
-func NewSpoutWorker(name string, pluginFilename string, pluginSymbol string, port string, 
-					sucGrouping string, sucField int, supervisorC chan string, workerC chan string, version int) *SpoutWorker {
+func NewSpoutWorker(name string, pluginFilename string, pluginSymbol string, port string,
+	sucGrouping string, sucField int, supervisorC chan string, workerC chan string, version int) *SpoutWorker {
 
 	procFunc := utils.LookupProcFunc(pluginFilename, pluginSymbol)
 
@@ -52,22 +53,22 @@ func NewSpoutWorker(name string, pluginFilename string, pluginSymbol string, por
 	sucIndexMap := make(map[int]string)
 
 	sw := &SpoutWorker{
-		Name: name,
-		procFunc: procFunc,
-		port: port,
-		tuples: tuples,
-		variables: variables,
-		publisher: publisher,
+		Name:        name,
+		procFunc:    procFunc,
+		port:        port,
+		tuples:      tuples,
+		variables:   variables,
+		publisher:   publisher,
 		sucGrouping: sucGrouping,
-		sucField: sucField,
+		sucField:    sucField,
 		sucIndexMap: sucIndexMap,
 		SupervisorC: supervisorC,
-		WorkerC: workerC,
-		suspend: false,
+		WorkerC:     workerC,
+		suspend:     false,
 	}
 
 	// Start from restore, read state file to get variables
-	if (version > 0) {
+	if version > 0 {
 		sw.DeserializeVariables(strconv.Itoa(version))
 	}
 	sw.Version = strconv.Itoa(version)
@@ -86,10 +87,10 @@ func (sw *SpoutWorker) Start() {
 	go sw.TalkWithSupervisor()
 
 	// Start publisher
-	sw.publisher = messages.NewPublisher(":"+sw.port)
+	sw.publisher = messages.NewPublisher(":" + sw.port)
 	go sw.publisher.AcceptConns()
 	go sw.publisher.PublishMessage(sw.publisher.PublishBoard)
-	time.Sleep(2 * time.Second) // Wait for all subscribers to join 
+	time.Sleep(2 * time.Second) // Wait for all subscribers to join
 
 	sw.buildSucIndexMap()
 
@@ -104,19 +105,29 @@ func (sw *SpoutWorker) Start() {
 
 // Receive tuple from input stream
 func (sw *SpoutWorker) receiveTuple() {
+	defer func() {
+		if r := recover(); r != nil {
+			log.Println("receiveTuple panic and recovered", r)
+		}
+	}()
 	for {
 		sw.suspendWg.Wait()
 		var empty []interface{}
 		var tuple []interface{}
-		err :=  sw.procFunc(empty, &tuple, &sw.variables)
-		if (err != nil) {
+		err := sw.procFunc(empty, &tuple, &sw.variables)
+		if err != nil {
 			continue
 		}
 		sw.tuples <- tuple
-	}	
+	}
 }
 
 func (sw *SpoutWorker) outputTuple() {
+	defer func() {
+		if r := recover(); r != nil {
+			log.Println("outputTuple panic and recovered", r)
+		}
+	}()
 	switch sw.sucGrouping {
 	case utils.GROUPING_BY_SHUFFLE:
 		count := 0
@@ -127,7 +138,7 @@ func (sw *SpoutWorker) outputTuple() {
 			sucConnId := sw.sucIndexMap[sucid]
 			sw.rwmutex.RUnlock()
 			sw.publisher.PublishBoard <- messages.Message{
-				Payload: bin,
+				Payload:      bin,
 				TargetConnId: sucConnId,
 			}
 			count++
@@ -140,7 +151,7 @@ func (sw *SpoutWorker) outputTuple() {
 			sucConnId := sw.sucIndexMap[sucid]
 			sw.rwmutex.RUnlock()
 			sw.publisher.PublishBoard <- messages.Message{
-				Payload: bin,
+				Payload:      bin,
 				TargetConnId: sucConnId,
 			}
 		}
@@ -149,7 +160,7 @@ func (sw *SpoutWorker) outputTuple() {
 			bin, _ := json.Marshal(tuple)
 			sw.publisher.Pool.Range(func(id string, conn net.Conn) {
 				sw.publisher.PublishBoard <- messages.Message{
-					Payload: bin,
+					Payload:      bin,
 					TargetConnId: id,
 				}
 			})
@@ -213,12 +224,17 @@ func (sw *SpoutWorker) TalkWithSupervisor() {
 	// Worker -> Supervisor
 	// 1. Serialized Variables With Version X          Worker -> Supervisor
 	// 2. W Suspended                                  Worker -> Supervisor
+	defer func() {
+		if r := recover(); r != nil {
+			log.Println("TalkWithSupervisor panic and recovered", r)
+		}
+	}()
 
 	for message := range sw.SupervisorC {
 		switch string(message[0]) {
 		case "1":
 			words := strings.Fields(message)
-			version := words[len(words) - 1]
+			version := words[len(words)-1]
 			sw.SerializeVariables(version)
 			sw.Version = version
 			fmt.Printf("%s Serialized Variables With Version %s\n", sw.Name, version)
@@ -241,5 +257,3 @@ func (sw *SpoutWorker) TalkWithSupervisor() {
 		}
 	}
 }
-
-
