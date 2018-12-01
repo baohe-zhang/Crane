@@ -32,6 +32,7 @@ type Driver struct {
 	SnapshotResponseCount int
 	TaskSum               int
 	SnapshotVersion       int
+	SnapshotInterval      int
 }
 
 // Factory mode to return the Driver instance
@@ -44,6 +45,7 @@ func NewDriver(addr string) *Driver {
 	driver.SuspendResponseCount = 0
 	driver.SnapshotResponseCount = 0
 	driver.SnapshotVersion = 0
+	driver.SnapshotInterval = 30
 	return driver
 }
 
@@ -298,6 +300,8 @@ func (d *Driver) RestoreRequest() {
 		return
 	}
 
+	d.SnapshotInterval += 15
+
 	// reset the counter of two snapshot state process responses
 	d.SuspendResponseCount = 0
 	d.SnapshotResponseCount = 0
@@ -332,6 +336,10 @@ func (d *Driver) SuspendRequest() {
 				host, _, _ := net.SplitHostPort(addr)
 				spoutHosts[host] = hostConnIdMap[host]
 			}
+		}
+		if d.SnapshotInterval > 30 {
+			time.Sleep(15 * time.Second)
+			d.SnapshotInterval = 30
 		}
 
 		for _, connId := range spoutHosts {
