@@ -205,7 +205,7 @@ func (sw *SpoutWorker) TalkWithSupervisor() {
 		case "1":
 			words := strings.Fields(message)
 			version := words[len(words) - 1]
-			fmt.Printf("Serialized Variables With Version %s\n", version)
+			fmt.Printf("%s Serialized Variables With Version %s\n", sw.Name, version)
 			sw.SerializeVariables(version)
 			// Notify the supervisor it serialized the variables
 			sw.WorkerC <- fmt.Sprintf("1. %s Serialized Variables With Version %s", sw.Name, version)
@@ -216,13 +216,13 @@ func (sw *SpoutWorker) TalkWithSupervisor() {
 		case "3":
 			sw.suspend = true
 			sw.suspendWg.Add(1)
-			fmt.Printf("Suspended Spout Worker\n")
+			fmt.Printf("%s Suspended\n", sw.Name)
 			sw.WorkerC <- fmt.Sprintf("2. %s Suspended", sw.Name)
 
 		case "4":
 			sw.suspend = false
 			sw.suspendWg.Done()
-			fmt.Printf("Resumeed Spout Worker\n")
+			fmt.Printf("%s Resumeed\n", sw.Name)
 		}
 	}
 }

@@ -132,18 +132,6 @@ func (bw *BoltWorker) Start() {
 	go bw.distributeTuple()
 	go bw.outputTuple()
 
-	// //Test
-	// time.Sleep(40 * time.Second)
-	// fmt.Println("start serialize")
-	// bw.SerializeVariables()
-	// time.Sleep(5 * time.Second)
-	// fmt.Println("start deserialize")
-	// bw.DeserializeVariables()
-	// for _, executor := range bw.executors {
-	// 	fmt.Println(executor.variables)
-	// }
-	// // End Test
-
 	bw.wg.Add(1)
 	bw.wg.Wait()
 	fmt.Printf("Worker Bolt %s Terminates\n", bw.Name)
@@ -317,7 +305,7 @@ func (bw *BoltWorker) TalkWithSupervisor() {
 		case "1":
 			words := strings.Fields(message)
 			version := words[len(words) - 1]
-			fmt.Printf("Serialize Variables With Version %s\n", version)
+			fmt.Printf("%s Serialize Variables With Version %s\n", bw.Name, version)
 			bw.SerializeVariables(version)
 			// Notify the supervisor it serialized the variables
 			bw.WorkerC <- fmt.Sprintf("1. %s Serialized Variables With Version %s\n", bw.Name, version)

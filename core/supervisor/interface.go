@@ -151,6 +151,7 @@ func (s *Supervisor) ListenToWorkers() {
 			for message := range bw.WorkerC {
 				switch string(message[0]) {
 				case "1":
+					fmt.Println("hi")
 					s.Mutex.Lock()
 					s.SerializeResponseCounter += 1
 					if (s.SerializeResponseCounter == (len(s.BoltWorkers) + len(s.SpoutWorkers))) {
@@ -168,6 +169,7 @@ func (s *Supervisor) ListenToWorkers() {
 			for message := range sw.WorkerC {
 				switch string(message[0]) {
 				case "1":
+					fmt.Println("hi")
 					s.Mutex.Lock()
 					s.SerializeResponseCounter += 1
 					if (s.SerializeResponseCounter == (len(s.BoltWorkers) + len(s.SpoutWorkers))) {
