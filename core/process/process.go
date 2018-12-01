@@ -43,7 +43,7 @@ func NextTuple(tuple []interface{}, result *[]interface{}, variables *[]interfac
 		// Initialize variables
 		counterMap = make(map[string]interface{})
 		*variables = append(*variables, counterMap)
-		counterMap["counter"] = 0
+		counterMap["counter"] = float64(0)
 	}
 	counterMap = (*variables)[0].(map[string]interface{})
 
