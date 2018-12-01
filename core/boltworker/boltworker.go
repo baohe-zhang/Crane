@@ -287,7 +287,7 @@ func (bw *BoltWorker) SerializeVariables(version string) {
 	file, err := os.Create(filename)
 	if err != nil {
 		fmt.Println(err)
-		os.Exit(1)
+		// os.Exit(1)
 	}
 	defer file.Close()
 
@@ -304,7 +304,7 @@ func (bw *BoltWorker) DeserializeVariables(version string) {
 	b, err := ioutil.ReadFile(filename)
 	if err != nil {
 		fmt.Println(err)
-		os.Exit(1)
+		// os.Exit(1)
 	}
 
 	// Unmarshal the binary value
