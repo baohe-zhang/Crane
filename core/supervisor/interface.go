@@ -25,6 +25,7 @@ type Supervisor struct {
 	FilePathMap  map[string]string
 	SerializeResponseCounter int
 	Mutex sync.Mutex
+	ControlC     chan string
 }
 
 // Factory mode to return the Supervisor instance
@@ -39,6 +40,7 @@ func NewSupervisor(driverAddr string) *Supervisor {
 	supervisor.VmIndexMap = make(map[int]string)
 	supervisor.FilePathMap = make(map[string]string)
 	supervisor.SerializeResponseCounter = 0
+	supervisor.ControlC = make(chan string)
 	return supervisor
 }
 
@@ -103,6 +105,8 @@ func (s *Supervisor) StartDaemon() {
 			s.SendSerializeRequestToWorkers(strconv.Itoa(version))
 
 		case utils.RESTORE_REQUEST:
+			s.ControlC <- "Close"
+			time.Sleep(100 * time.Millisecond)
 			s.SendKillRequestToWorkers()
 			// Clear supervisor's worker map
 			s.BoltWorkers = make([]*boltworker.BoltWorker, 0)
@@ -127,6 +131,7 @@ func (s *Supervisor) SendJoinRequest() {
 }
 
 // Listen workers reply through channels
+// Should be closed when receive restore request
 func (s *Supervisor) ListenToWorkers() {
 	// Message Type:
 	// Superviosr -> Worker
@@ -140,6 +145,13 @@ func (s *Supervisor) ListenToWorkers() {
 	fmt.Println("Listening To Workers")
 
 	for {
+		// Channel to close this goroutine
+		select {
+		case signal := <- s.ControlC:
+			fmt.Printf("Receive Signal %s, function return\n", signal)
+			return 
+		}
+
 		for _, bw := range s.BoltWorkers {
 			select {
 			case message := <- bw.WorkerC:
