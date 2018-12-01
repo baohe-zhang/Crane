@@ -55,6 +55,7 @@ func (s *Supervisor) StartDaemon() {
 			case utils.FILE_PULL:
 				filePull := &utils.FilePull{}
 				utils.Unmarshal(payload.Content, filePull)
+				log.Printf("Receive File Pull with Filename %s\n", filePull.Filename)
 				if filePull.Filename != "None" {
 					s.GetFile(filePull.Filename)
 				}
