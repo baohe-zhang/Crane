@@ -11,6 +11,7 @@ import (
 	"os"
 	"io/ioutil"
 	"strings"
+	"strconv"
 )
 
 const (
@@ -33,10 +34,11 @@ type SpoutWorker struct {
 	WorkerC chan string
 	suspend bool
 	suspendWg sync.WaitGroup
+	Version string
 }
 
 func NewSpoutWorker(name string, pluginFilename string, pluginSymbol string, port string, 
-					sucGrouping string, sucField int, supervisorC chan string, workerC chan string) *SpoutWorker {
+					sucGrouping string, sucField int, supervisorC chan string, workerC chan string, version int) *SpoutWorker {
 
 	procFunc := utils.LookupProcFunc(pluginFilename, pluginSymbol)
 
@@ -64,6 +66,12 @@ func NewSpoutWorker(name string, pluginFilename string, pluginSymbol string, por
 		suspend: false,
 	}
 
+	// Start from restore, read state file to get variables
+	if (version >= 0) {
+		sw.DeserializeVariables(strconv.Itoa(version))
+	}
+	sw.Version = strconv.Itoa(version)
+
 	return sw
 }
 
@@ -88,6 +96,7 @@ func (sw *SpoutWorker) Start() {
 
 	sw.wg.Add(1)
 	sw.wg.Wait()
+	fmt.Printf("Spout Worker %s Terminates\n", sw.Name)
 }
 
 // Receive tuple from input stream

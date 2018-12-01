@@ -68,7 +68,7 @@ func (s *Supervisor) StartDaemon() {
 			workerC := make(chan string) // Channel to listen to the worker
 			bw := boltworker.NewBoltWorker(10, task.Name, "./"+task.PluginFile, task.PluginSymbol, 
 				task.Port, task.PrevBoltAddr, task.PrevBoltGroupingHint, task.PrevBoltFieldIndex,
-				task.SuccBoltGroupingHint, task.SuccBoltFieldIndex, supervisorC, workerC)
+				task.SuccBoltGroupingHint, task.SuccBoltFieldIndex, supervisorC, workerC, task.SnapshotVersion)
 			s.BoltWorkers = append(s.BoltWorkers, bw)
 
 		case utils.SPOUT_TASK:
@@ -78,7 +78,7 @@ func (s *Supervisor) StartDaemon() {
 			supervisorC := make(chan string)
 			workerC := make(chan string)
 			sw := spoutworker.NewSpoutWorker(task.Name, "./"+task.PluginFile, task.PluginSymbol, task.Port, 
-				task.GroupingHint, task.FieldIndex, supervisorC, workerC)
+				task.GroupingHint, task.FieldIndex, supervisorC, workerC, task.SnapshotVersion)
 			s.SpoutWorkers = append(s.SpoutWorkers, sw)
 
 		case utils.TASK_ALL_DISPATCHED:
@@ -101,6 +101,9 @@ func (s *Supervisor) StartDaemon() {
 			utils.Unmarshal(payload.Content, &version)
 			fmt.Printf("Receive Snapshot Request With Version %d\n", version)
 			s.SendSerializeRequestToWorkers(strconv.Itoa(version))
+
+		case utils.RESTORE_REQUEST:
+			s.SendKillRequestToWorkers()
 		}
 	}
 }
@@ -117,24 +120,6 @@ func (s *Supervisor) SendJoinRequest() {
 		Payload:      b,
 		TargetConnId: s.Sub.Conn.RemoteAddr().String(),
 	}
-}
-
-// Get the plugin file from distributed file system
-func (s *Supervisor) GetFile(remoteName string) {
-	_, ok := s.FilePathMap[remoteName]
-	if ok {
-		return
-	}
-	// Execute the sdfs client to get the remote file
-	usr, _ := user.Current()
-	usrHome := usr.HomeDir
-	cmd := exec.Command(usrHome+"/go/src/crane/tools/sdfs_client/sdfs_client", "-master", "fa18-cs425-g29-01.cs.illinois.edu:5000", "get", remoteName, "./"+remoteName)
-	stdoutStderr, err := cmd.CombinedOutput()
-	if err != nil {
-		log.Fatal(err)
-	}
-	fmt.Printf("%s\n", stdoutStderr)
-	s.FilePathMap[remoteName] = "./" + remoteName
 }
 
 // Listen workers reply through channels
@@ -157,6 +142,7 @@ func (s *Supervisor) ListenToWorkers() {
 				fmt.Println(message)
 				switch string(message[0]) {
 				case "1":
+					go s.PutFile("./" + bw.Name + "_" + bw.Version, bw.Name + "_" + bw.Version)
 					s.SerializeResponseCounter += 1
 					if (s.SerializeResponseCounter == (len(s.BoltWorkers) + len(s.SpoutWorkers))) {
 						s.SerializeResponseCounter = 0
@@ -174,6 +160,7 @@ func (s *Supervisor) ListenToWorkers() {
 				fmt.Println(message)
 				switch string(message[0]) {
 				case "1":
+					go s.PutFile("./" + sw.Name + "_" + sw.Version, sw.Name + "_" + sw.Version)
 					s.SerializeResponseCounter += 1
 					if (s.SerializeResponseCounter == (len(s.BoltWorkers) + len(s.SpoutWorkers))) {
 						s.SerializeResponseCounter = 0
@@ -259,6 +246,37 @@ func (s *Supervisor) SendResumeRequestToWorkers() {
 	for _, sw := range s.SpoutWorkers {
 		sw.SupervisorC <- fmt.Sprintf("4. Please Resume")
 	}
+}
+
+// Get the plugin file from distributed file system
+func (s *Supervisor) GetFile(remoteName string) {
+	_, ok := s.FilePathMap[remoteName]
+	if ok {
+		return
+	}
+	// Execute the sdfs client to get the remote file
+	usr, _ := user.Current()
+	usrHome := usr.HomeDir
+	cmd := exec.Command(usrHome+"/go/src/crane/tools/sdfs_client/sdfs_client", "-master", "fa18-cs425-g29-01.cs.illinois.edu:5000", "get", remoteName, "./"+remoteName)
+	stdoutStderr, err := cmd.CombinedOutput()
+	if err != nil {
+		log.Fatal(err)
+	}
+	fmt.Printf("%s\n", stdoutStderr)
+	s.FilePathMap[remoteName] = "./" + remoteName
+}
+
+// Put State File into Distributed File System
+func (s *Supervisor) PutFile(localPath, remoteName string) {
+	// Execute the sdfs client to put the local file into remote
+	usr, _ := user.Current()
+	usrHome := usr.HomeDir
+	cmd := exec.Command(usrHome+"/go/src/crane/tools/sdfs_client/sdfs_client", "-master", "fa18-cs425-g29-01.cs.illinois.edu:5000", "put", localPath, remoteName)
+	stdoutStderr, err := cmd.CombinedOutput()
+	if err != nil {
+		log.Fatal(err)
+	}
+	fmt.Printf("%s\n", stdoutStderr)
 }
 
 
