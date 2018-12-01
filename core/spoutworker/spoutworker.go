@@ -65,7 +65,7 @@ func NewSpoutWorker(name string, pluginFilename string, pluginSymbol string, por
 }
 
 func (sw *SpoutWorker) Start() {
-	defer close(sw.tuples)
+	// defer close(sw.tuples)
 
 	fmt.Printf("spout worker %s start\n", sw.Name)
 
@@ -90,11 +90,11 @@ func (sw *SpoutWorker) Start() {
 // Receive tuple from input stream
 func (sw *SpoutWorker) receiveTuple() {
 	for {
-		var empty []interface{}
-		var tuple []interface{}
 		if (sw.suspend == true) {
 			continue
 		}
+		var empty []interface{}
+		var tuple []interface{}
 		err :=  sw.procFunc(empty, &tuple, &sw.variables)
 		if (err != nil) {
 			continue
