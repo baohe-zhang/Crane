@@ -61,11 +61,6 @@ func (pub *Publisher) PublishMessage(msgChan chan Message) {
 
 // Publisher would close after this call
 func (pub *Publisher) Close() {
-	pub.RWLock.Lock()
-	for connId, _ := range pub.Channels {
-		delete(pub.Channels, connId)
-	}
-	pub.RWLock.Unlock()
 	pub.Listener.Close()
 }
 
