@@ -105,11 +105,11 @@ func (sw *SpoutWorker) Start() {
 
 // Receive tuple from input stream
 func (sw *SpoutWorker) receiveTuple() {
-	defer func() {
-		if r := recover(); r != nil {
-			log.Println("receiveTuple panic and recovered", r)
-		}
-	}()
+	// defer func() {
+	// 	if r := recover(); r != nil {
+	// 		log.Println("receiveTuple panic and recovered", r)
+	// 	}
+	// }()
 	for {
 		sw.suspendWg.Wait()
 		var empty []interface{}
