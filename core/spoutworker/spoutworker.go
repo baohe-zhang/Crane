@@ -93,10 +93,7 @@ func (sw *SpoutWorker) Start() {
 // Receive tuple from input stream
 func (sw *SpoutWorker) receiveTuple() {
 	for {
-		if (sw.suspend == true) {
-			sw.suspendWg.Add(1)
-			sw.suspendWg.Wait()
-		}
+		sw.suspendWg.Wait()
 		var empty []interface{}
 		var tuple []interface{}
 		err :=  sw.procFunc(empty, &tuple, &sw.variables)
@@ -218,6 +215,7 @@ func (sw *SpoutWorker) TalkWithSupervisor() {
 
 		case "3":
 			sw.suspend = true
+			sw.suspendWg.Add(1)
 			fmt.Printf("Suspended Spout Worker\n")
 			sw.WorkerC <- fmt.Sprintf("2. %s Suspended", sw.Name)
 
