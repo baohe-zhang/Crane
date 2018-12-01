@@ -96,6 +96,7 @@ func (sw *SpoutWorker) Start() {
 
 	sw.wg.Add(1)
 	sw.wg.Wait()
+	// sw.publisher.Close()
 	fmt.Printf("Spout Worker %s Terminates\n", sw.Name)
 }
 
