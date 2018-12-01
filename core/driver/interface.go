@@ -155,13 +155,15 @@ func (d *Driver) BuildTopology(topo *topology.Topology) {
 	fmt.Println(addrs)
 	// Stage 1 : Send pull request to supervisor to pull the file needed
 	// including the plugin file and state files for restoring
-	for id, _ := range addrs {
-		targetId := d.SupervisorIdMap[uint32(id)]
-		msg := utils.FilePull{topo.Bolts[0].PluginFile}
-		b, _ := utils.Marshal(utils.FILE_PULL, msg)
-		d.Pub.PublishBoard <- messages.Message{
-			Payload:      b,
-			TargetConnId: targetId,
+	if d.SnapshotVersion == 0 {
+		for id, _ := range addrs {
+			targetId := d.SupervisorIdMap[uint32(id)]
+			msg := utils.FilePull{topo.Bolts[0].PluginFile}
+			b, _ := utils.Marshal(utils.FILE_PULL, msg)
+			d.Pub.PublishBoard <- messages.Message{
+				Payload:      b,
+				TargetConnId: targetId,
+			}
 		}
 	}
 
@@ -313,7 +315,7 @@ func (d *Driver) RestoreRequest() {
 // before request backup snapshot for each node workers
 func (d *Driver) SuspendRequest() {
 	for {
-		time.Sleep(20 * time.Second)
+		time.Sleep(40 * time.Second)
 		hostConnIdMap := make(map[string]string)
 		for _, connId := range d.SupervisorIdMap {
 			host, _, _ := net.SplitHostPort(connId)

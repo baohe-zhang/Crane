@@ -59,6 +59,16 @@ func (pub *Publisher) PublishMessage(msgChan chan Message) {
 	}
 }
 
+// Publisher would close after this call
+func (pub *Publisher) Close() {
+	pub.RWLock.Lock()
+	for connId, _ := range pub.Channels {
+		close(pub.Channels[connId])
+	}
+	pub.RWLock.Unlock()
+	pub.Listener.Close()
+}
+
 // Publisher would wait new connection on the listening socket
 func (pub *Publisher) AcceptConns() {
 	// forever loop to accept new connections
