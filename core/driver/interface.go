@@ -307,7 +307,7 @@ func (d *Driver) RestoreRequest() {
 		return
 	}
 
-	d.SnapshotInterval += 15
+	d.SnapshotInterval += 20
 
 	// reset the counter of two snapshot state process responses
 	d.SuspendResponseCount = 0
@@ -345,7 +345,9 @@ func (d *Driver) SuspendRequest() {
 			}
 		}
 		if d.SnapshotInterval > 30 {
-			time.Sleep(15 * time.Second)
+			for i := d.SnapshotInterval; i >= 30; i-- {
+				time.Sleep(time.Second)
+			}
 			d.SnapshotInterval = 30
 		}
 
