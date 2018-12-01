@@ -172,7 +172,7 @@ func (d *Driver) BuildTopology(topo *topology.Topology) {
 			for _, task := range tasks {
 				spout, ok := task.(*spout.SpoutInst)
 				if ok {
-					stateFileName := spout.Name + "_" + fmt.Sprintf("%d_%d", count, d.SnapshotVersion)
+					stateFileName := spout.Name + "_" + fmt.Sprintf("%d_%d", count, d.SnapshotVersion-1)
 					msg := utils.FilePull{stateFileName}
 					b, _ := utils.Marshal(utils.FILE_PULL, msg)
 					d.Pub.PublishBoard <- messages.Message{
@@ -181,7 +181,7 @@ func (d *Driver) BuildTopology(topo *topology.Topology) {
 					}
 				} else {
 					bolt, _ := task.(*bolt.BoltInst)
-					stateFileName := bolt.Name + "_" + fmt.Sprintf("%d_%d", count, d.SnapshotVersion)
+					stateFileName := bolt.Name + "_" + fmt.Sprintf("%d_%d", count, d.SnapshotVersion-1)
 					msg := utils.FilePull{stateFileName}
 					b, _ := utils.Marshal(utils.FILE_PULL, msg)
 					d.Pub.PublishBoard <- messages.Message{
