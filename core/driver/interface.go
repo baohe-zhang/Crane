@@ -160,7 +160,7 @@ func (d *Driver) BuildTopology(topo *topology.Topology) {
 
 	d.TaskSum = count + 1
 
-	time.Sleep(10 * time.Second) // Sleep 10s to ensure all supervisors fetch the .so file
+	time.Sleep(5 * time.Second) // Sleep 10s to ensure all supervisors fetch the .so file
 
 	// Stage 2 : Send the task message information to supervisors
 	count = 1
