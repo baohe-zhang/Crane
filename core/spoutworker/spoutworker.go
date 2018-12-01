@@ -180,6 +180,10 @@ func (sw *SpoutWorker) buildSucIndexMap() {
 // Serialize and store variables into local file
 func (sw *SpoutWorker) SerializeVariables(version string) {
 	log.Printf("%s Start Serializing Variables With Version %s\n", sw.Name, version)
+
+	var bins []interface{}
+	bins = append(bins, sw.variables)
+
 	// Create file to store
 	filename := fmt.Sprintf("%s_%s", sw.Name, version)
 	file, err := os.Create(filename)
@@ -190,8 +194,7 @@ func (sw *SpoutWorker) SerializeVariables(version string) {
 	defer file.Close()
 
 	// Store variable's binary value into the file
-	log.Printf("%s Serialize Variables %v\n", sw.Name, sw.variables)
-	b, _ := json.Marshal(sw.variables)
+	b, _ := json.Marshal(bins)
 	file.Write(b)
 }
 
@@ -207,11 +210,11 @@ func (sw *SpoutWorker) DeserializeVariables(version string) {
 	}
 
 	// Unmarshal the binary value
-	var variables interface{}
-	json.Unmarshal(b, &variables)
+	var bins []interface{}
+	json.Unmarshal(b, &bins)
 
 	// Deserialize to get variables
-	sw.variables = variables.([]interface{})
+	sw.variables = bins[0].([]interface{})
 	log.Printf("%s Deserialize Variables %v\n", sw.Name, sw.variables)
 }
 
