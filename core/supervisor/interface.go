@@ -104,6 +104,10 @@ func (s *Supervisor) StartDaemon() {
 
 		case utils.RESTORE_REQUEST:
 			s.SendKillRequestToWorkers()
+			// Clear supervisor's worker map
+			s.BoltWorkers = s.BoltWorkers[:0]
+			s.SpoutWorkers = s.SpoutWorkers[:0]
+
 		}
 	}
 }
