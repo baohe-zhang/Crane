@@ -45,7 +45,7 @@ func NextTuple(tuple []interface{}, result *[]interface{}, variables *[]interfac
 		*variables = append(*variables, counterMap)
 		counterMap["counter"] = 0
 	}
-	counterMap = ((*variables)[0]).(map[string]int)
+	counterMap = (*variables)[0].(map[string]int)
 
 	// Logic
 	if counterMap["counter"] < 201 {
