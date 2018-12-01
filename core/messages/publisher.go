@@ -53,6 +53,10 @@ func (pub *Publisher) PublishMessage(msgChan chan Message) {
 
 		// send message to targetConn
 		targetConn := pub.Pool.Get(message.TargetConnId)
+		if targetConn == nil {
+			log.Printf("Lost link %s and not publish now\n", message.TargetConnId)
+			break
+		}
 		writer := bufio.NewWriter(targetConn)
 		writer.Write(append(message.Payload, '\n'))
 		writer.Flush()
