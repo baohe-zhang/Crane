@@ -190,6 +190,7 @@ func (sw *SpoutWorker) SerializeVariables(version string) {
 	defer file.Close()
 
 	// Store variable's binary value into the file
+	fmt.Printf("Serialize variables %v\n", sw.variables)
 	b, _ := json.Marshal(sw.variables)
 	file.Write(b)
 }
@@ -208,7 +209,7 @@ func (sw *SpoutWorker) DeserializeVariables(version string) {
 	// Unmarshal the binary value
 	// var variables []interface{}
 	json.Unmarshal(b, &sw.variables)
-
+	fmt.Printf("Deserialize variables %v\n", sw.variables)
 	// Deserialize to get variables
 	// sw.variables = variables
 }
