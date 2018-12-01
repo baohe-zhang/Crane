@@ -105,11 +105,11 @@ func (sw *SpoutWorker) Start() {
 
 // Receive tuple from input stream
 func (sw *SpoutWorker) receiveTuple() {
-	defer func() {
-		if r := recover(); r != nil {
-			log.Println("receiveTuple panic and recovered", r)
-		}
-	}()
+	// defer func() {
+	// 	if r := recover(); r != nil {
+	// 		log.Println("receiveTuple panic and recovered", r)
+	// 	}
+	// }()
 	for {
 		sw.suspendWg.Wait()
 		var empty []interface{}
@@ -180,18 +180,21 @@ func (sw *SpoutWorker) buildSucIndexMap() {
 // Serialize and store variables into local file
 func (sw *SpoutWorker) SerializeVariables(version string) {
 	log.Printf("%s Start Serializing Variables With Version %s\n", sw.Name, version)
+
+	var bins []interface{}
+	bins = append(bins, sw.variables)
+
 	// Create file to store
 	filename := fmt.Sprintf("%s_%s", sw.Name, version)
 	file, err := os.Create(filename)
 	if err != nil {
 		fmt.Println(err)
-		os.Exit(1)
+		// os.Exit(1)
 	}
 	defer file.Close()
 
 	// Store variable's binary value into the file
-	log.Printf("%s Serialize Variables %v\n", sw.Name, sw.variables)
-	b, _ := json.Marshal(sw.variables)
+	b, _ := json.Marshal(bins)
 	file.Write(b)
 }
 
@@ -203,15 +206,15 @@ func (sw *SpoutWorker) DeserializeVariables(version string) {
 	b, err := ioutil.ReadFile("./" + filename)
 	if err != nil {
 		fmt.Println(err)
-		os.Exit(1)
+		// os.Exit(1)
 	}
 
 	// Unmarshal the binary value
-	var variables interface{}
-	json.Unmarshal(b, &variables)
+	var bins []interface{}
+	json.Unmarshal(b, &bins)
 
 	// Deserialize to get variables
-	sw.variables = variables.([]interface{})
+	sw.variables = bins[0].([]interface{})
 	log.Printf("%s Deserialize Variables %v\n", sw.Name, sw.variables)
 }
 

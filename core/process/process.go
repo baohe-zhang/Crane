@@ -37,21 +37,21 @@ func ProcFunc(tuple []interface{}, result *[]interface{}, variables *[]interface
 func NextTuple(tuple []interface{}, result *[]interface{}, variables *[]interface{}) error {
 	// Variables
 	words := []string{"china", "usa", "japan", "korea", "russia", "india", "singapore"}
-	var counterMap map[string]int
+	var counterMap map[string]interface{}
 
 	if (len(*variables) == 0) {
 		// Initialize variables
-		counterMap = make(map[string]int)
+		counterMap = make(map[string]interface{})
 		*variables = append(*variables, counterMap)
-		counterMap["counter"] = 0
+		counterMap["counter"] = float64(0)
 	}
-	counterMap = ((*variables)[0]).(map[string]int)
+	counterMap = (*variables)[0].(map[string]interface{})
 
 	// Logic
-	if counterMap["counter"] < 201 {
-		*result = []interface{}{words[counterMap["counter"] % len(words)]}
+	if counterMap["counter"].(float64) < 201 {
+		*result = []interface{}{words[int(counterMap["counter"].(float64)) % len(words)]}
 		fmt.Printf("spout emit: (%v)\n", *result)
-		counterMap["counter"] = counterMap["counter"] + 1
+		counterMap["counter"] = counterMap["counter"].(float64) + 1
 	}
 	time.Sleep(100 * time.Millisecond)
 

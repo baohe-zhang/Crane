@@ -279,6 +279,7 @@ func (s *Supervisor) SendResumeRequestToWorkers() {
 
 // Get the plugin file from distributed file system
 func (s *Supervisor) GetFile(remoteName string) {
+	time.Sleep(1 * time.Second)
 	_, ok := s.FilePathMap[remoteName]
 	if ok {
 		return
@@ -286,27 +287,30 @@ func (s *Supervisor) GetFile(remoteName string) {
 	// Execute the sdfs client to get the remote file
 	usr, _ := user.Current()
 	usrHome := usr.HomeDir
-	exec.Command(usrHome+"/go/src/crane/tools/sdfs_client/sdfs_client", "-master", "fa18-cs425-g29-01.cs.illinois.edu:5000", "get", remoteName, "./"+remoteName)
-	// stdoutStderr, err := cmd.CombinedOutput()
-	// if err != nil {
-	// 	log.Fatal(err)
-	// }
-	// fmt.Printf("%s\n", stdoutStderr)
+	// exec.Command(usrHome+"/go/src/crane/tools/sdfs_client/sdfs_client", "-master", "fa18-cs425-g29-01.cs.illinois.edu:5000", "get", remoteName, "./"+remoteName)
+	cmd := exec.Command(usrHome+"/go/src/crane/tools/sdfs_client/sdfs_client", "-master", "fa18-cs425-g29-01.cs.illinois.edu:5000", "get", remoteName, "./"+remoteName)
+	stdoutStderr, err := cmd.CombinedOutput()
+	if err != nil {
+		log.Fatal(err)
+	}
+	log.Printf("%s\n", stdoutStderr)
 	s.FilePathMap[remoteName] = "./" + remoteName
 	log.Printf("Get File %s", remoteName)
 }
 
 // Put State File into Distributed File System
 func (s *Supervisor) PutFile(localPath, remoteName string) {
+	time.Sleep(1 * time.Second)
 	// Execute the sdfs client to put the local file into remote
 	usr, _ := user.Current()
 	usrHome := usr.HomeDir
-	exec.Command(usrHome+"/go/src/crane/tools/sdfs_client/sdfs_client", "-master", "fa18-cs425-g29-01.cs.illinois.edu:5000", "put", localPath, remoteName)
-	// stdoutStderr, err := cmd.CombinedOutput()
-	// if err != nil {
-	// 	log.Fatal(err)
-	// }
-	// fmt.Printf("%s\n", stdoutStderr)
+	// exec.Command(usrHome+"/go/src/crane/tools/sdfs_client/sdfs_client", "-master", "fa18-cs425-g29-01.cs.illinois.edu:5000", "put", localPath, remoteName)
+	cmd := exec.Command(usrHome+"/go/src/crane/tools/sdfs_client/sdfs_client", "-master", "fa18-cs425-g29-01.cs.illinois.edu:5000", "put", localPath, remoteName)
+	stdoutStderr, err := cmd.CombinedOutput()
+	if err != nil {
+		log.Fatal(err)
+	}
+	log.Printf("%s\n", stdoutStderr)
 	log.Printf("Put File %s", remoteName)
 }
 
