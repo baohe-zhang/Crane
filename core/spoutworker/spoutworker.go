@@ -160,7 +160,7 @@ func (sw *SpoutWorker) buildSucIndexMap() {
 // Serialize and store variables into local file
 func (sw *SpoutWorker) SerializeVariables(version string) {
 	// Create file to store
-	filename := sw.Name + "_" + "0"
+	filename := fmt.Sprintf("%s_%s", sw.Name, version)
 	file, err := os.Create(filename)
 	if err != nil {
 		fmt.Println(err)
@@ -176,7 +176,7 @@ func (sw *SpoutWorker) SerializeVariables(version string) {
 // Deserialize variables from local file
 func (sw *SpoutWorker) DeserializeVariables(version string) {
 	// Open the local file that stores the variables' binary value
-	filename := sw.Name + "_" + "0"
+	filename := fmt.Sprintf("%s_%s", sw.Name, version)
 	b, err := ioutil.ReadFile(filename)
 	if err != nil {
 		fmt.Println(err)

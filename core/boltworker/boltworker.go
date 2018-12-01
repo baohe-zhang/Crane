@@ -267,7 +267,8 @@ func (bw *BoltWorker) SerializeVariables(version string) {
 	}
 
 	// Create file to store
-	file, err := os.Create(bw.Name + "-" + version)
+	filename := fmt.Sprintf("%s_%s", bw.Name, version)
+	file, err := os.Create(filename)
 	if err != nil {
 		fmt.Println(err)
 		os.Exit(1)
@@ -282,7 +283,8 @@ func (bw *BoltWorker) SerializeVariables(version string) {
 // Deserialize executors' variables from local file
 func (bw *BoltWorker) DeserializeVariables(version string) {
 	// Open the local file that stores the variables' binary value
-	b, err := ioutil.ReadFile(bw.Name + "-" + version)
+	filename := fmt.Sprintf("%s_%s", bw.Name, version)
+	b, err := ioutil.ReadFile(filename)
 	if err != nil {
 		fmt.Println(err)
 		os.Exit(1)
