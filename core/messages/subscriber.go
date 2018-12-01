@@ -48,7 +48,7 @@ func (sub *Subscriber) ReadMessage() {
 			// Connection Id as the address
 			connId := sub.Conn.RemoteAddr().String()
 			// push message from subscriber to message channel
-			log.Printf("Received message on socket %s", connId)
+			//log.Printf("Received message on socket %s", connId)
 			sub.PublishBoard <- Message{
 				Payload:      request,
 				SourceConnId: connId,
@@ -63,7 +63,7 @@ func (sub *Subscriber) RequestMessage() {
 	for {
 		message := <-sub.Request
 
-		log.Println("Going to send message on socket %s", message.TargetConnId)
+		//log.Println("Going to send message on socket %s", message.TargetConnId)
 
 		// send message to targetConn
 		writer := bufio.NewWriter(sub.Conn)
