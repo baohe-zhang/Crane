@@ -293,6 +293,7 @@ func (s *Supervisor) GetFile(remoteName string) {
 
 // Put State File into Distributed File System
 func (s *Supervisor) PutFile(localPath, remoteName string) {
+	time.Sleep(2 * time.Second)
 	// Execute the sdfs client to put the local file into remote
 	usr, _ := user.Current()
 	usrHome := usr.HomeDir
