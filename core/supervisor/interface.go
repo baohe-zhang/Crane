@@ -162,7 +162,6 @@ func (s *Supervisor) ListenToWorkers() {
 				return
 
 			case message := <-bw.WorkerC:
-				fmt.Println(message)
 				switch string(message[0]) {
 				case "1":
 					go s.PutFile("./"+bw.Name+"_"+bw.Version, bw.Name+"_"+bw.Version)
@@ -186,7 +185,6 @@ func (s *Supervisor) ListenToWorkers() {
 				return
 
 			case message := <-sw.WorkerC:
-				fmt.Println(message)
 				switch string(message[0]) {
 				case "1":
 					go s.PutFile("./"+sw.Name+"_"+sw.Version, sw.Name+"_"+sw.Version)
