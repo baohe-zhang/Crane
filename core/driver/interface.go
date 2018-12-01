@@ -170,7 +170,7 @@ func (d *Driver) BuildTopology(topo *topology.Topology) {
 	count = 1
 	if d.SnapshotVersion > 0 {
 		for id, tasks := range addrs {
-			time.Sleep(20 * time.Millisecond)
+			time.Sleep(200 * time.Millisecond)
 			targetId := d.SupervisorIdMap[uint32(id)]
 			for _, task := range tasks {
 				spout, ok := task.(*spout.SpoutInst)
@@ -192,8 +192,8 @@ func (d *Driver) BuildTopology(topo *topology.Topology) {
 						TargetConnId: targetId,
 					}
 				}
+				count++
 			}
-			count++
 		}
 	}
 
