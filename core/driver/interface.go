@@ -210,7 +210,7 @@ func (d *Driver) BuildTopology(topo *topology.Topology) {
 					PluginFile:      spout.PluginFile,
 					PluginSymbol:    spout.PluginSymbol,
 					Port:            fmt.Sprintf("%d", utils.CONTRACTOR_BASE_PORT+offset),
-					SnapshotVersion: d.SnapshotVersion,
+					SnapshotVersion: d.SnapshotVersion - 1,
 				}
 				fmt.Println(msg)
 				b, _ := utils.Marshal(utils.SPOUT_TASK, msg)
@@ -227,7 +227,7 @@ func (d *Driver) BuildTopology(topo *topology.Topology) {
 					PluginFile:           bolt.PluginFile,
 					PluginSymbol:         bolt.PluginSymbol,
 					Port:                 fmt.Sprintf("%d", utils.CONTRACTOR_BASE_PORT+offset),
-					SnapshotVersion:      d.SnapshotVersion,
+					SnapshotVersion:      d.SnapshotVersion - 1,
 				}
 
 				_, ok = d.SpoutMap[bolt.PrevTaskNames[0]]
