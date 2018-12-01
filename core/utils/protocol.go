@@ -11,6 +11,7 @@ const (
 	SUSPEND_RESPONSE    = "suspend_response"
 	SNAPSHOT_REQUEST    = "snapshot_request"
 	SNAPSHOT_RESPONSE   = "snapshot_response"
+	RESTORE_REQUEST     = "restore_request"
 	TOPO_SUBMISSION     = "topo_submission"
 	TOPO_SUBMISSION_RES = "topo_submission_response"
 	BOLT_TASK           = "bolt_task"
@@ -52,15 +53,17 @@ type BoltTaskMessage struct {
 	SuccBoltFieldIndex   int
 	PluginFile           string
 	PluginSymbol         string
+	SnapshotVersion      int
 }
 
 type SpoutTaskMessage struct {
-	Name         string
-	Port         string
-	GroupingHint string
-	FieldIndex   int
-	PluginFile   string
-	PluginSymbol string
+	Name            string
+	Port            string
+	GroupingHint    string
+	FieldIndex      int
+	PluginFile      string
+	PluginSymbol    string
+	SnapshotVersion int
 }
 
 func Marshal(contentType string, content interface{}) ([]byte, error) {

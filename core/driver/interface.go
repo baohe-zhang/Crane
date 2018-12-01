@@ -20,12 +20,14 @@ const ()
 // dispaching the spouts or bolts task
 type Driver struct {
 	Pub                   *messages.Publisher
+	Topo                  *topology.Topology
 	SupervisorIdMap       []string
 	LockSIM               sync.RWMutex
 	TopologyGraph         map[string][]interface{}
 	SpoutMap              map[string]spout.SpoutInst
 	BoltMap               map[string]bolt.BoltInst
 	VmIndexMap            map[int]string
+	VersionCtlTimer       map[int]*time.Timer
 	SuspendResponseCount  int
 	SnapshotResponseCount int
 	TaskSum               int
@@ -37,11 +39,11 @@ func NewDriver(addr string) *Driver {
 	driver := &Driver{}
 	driver.Pub = messages.NewPublisher(addr)
 	driver.SupervisorIdMap = make([]string, 0)
-	driver.SpoutMap = make(map[string]spout.SpoutInst)
-	driver.BoltMap = make(map[string]bolt.BoltInst)
 	driver.VmIndexMap = make(map[int]string)
+	driver.VersionCtlTimer = make(map[int]*time.Timer)
 	driver.SuspendResponseCount = 0
 	driver.SnapshotResponseCount = 0
+	driver.SnapshotVersion = -1
 	return driver
 }
 
@@ -77,6 +79,7 @@ func (d *Driver) StartDaemon() {
 							if connId_ == connId {
 								d.SupervisorIdMap = append(d.SupervisorIdMap[:index], d.SupervisorIdMap[index+1:]...)
 								delete(d.Pub.Channels, connId)
+								d.RestoreRequest()
 							}
 						}
 						d.LockSIM.Unlock()
@@ -90,6 +93,7 @@ func (d *Driver) StartDaemon() {
 					}
 					topo := &topology.Topology{}
 					utils.Unmarshal(payload.Content, topo)
+					d.Topo = topo
 					d.BuildTopology(topo)
 				// Spout instance responses
 				case utils.SUSPEND_RESPONSE:
@@ -120,6 +124,8 @@ func (d *Driver) StartDaemon() {
 func (d *Driver) BuildTopology(topo *topology.Topology) {
 	// make the map for a task name (spout or bolt) to the task instance
 	d.TopologyGraph = make(map[string][]interface{})
+	d.SpoutMap = make(map[string]spout.SpoutInst)
+	d.BoltMap = make(map[string]bolt.BoltInst)
 	// build the vectors table
 	for i, _ := range topo.Bolts {
 		preVecs := topo.Bolts[i].PrevTaskNames
@@ -171,12 +177,13 @@ func (d *Driver) BuildTopology(topo *topology.Topology) {
 			spout, ok := task.(*spout.SpoutInst)
 			if ok {
 				msg := utils.SpoutTaskMessage{
-					Name:         spout.Name + "_" + fmt.Sprintf("%d", count),
-					GroupingHint: spout.GroupingHint,
-					FieldIndex:   spout.FieldIndex,
-					PluginFile:   spout.PluginFile,
-					PluginSymbol: spout.PluginSymbol,
-					Port:         fmt.Sprintf("%d", utils.CONTRACTOR_BASE_PORT+offset),
+					Name:            spout.Name + "_" + fmt.Sprintf("%d", count),
+					GroupingHint:    spout.GroupingHint,
+					FieldIndex:      spout.FieldIndex,
+					PluginFile:      spout.PluginFile,
+					PluginSymbol:    spout.PluginSymbol,
+					Port:            fmt.Sprintf("%d", utils.CONTRACTOR_BASE_PORT+offset),
+					SnapshotVersion: d.SnapshotVersion,
 				}
 				fmt.Println(msg)
 				b, _ := utils.Marshal(utils.SPOUT_TASK, msg)
@@ -193,6 +200,7 @@ func (d *Driver) BuildTopology(topo *topology.Topology) {
 					PluginFile:           bolt.PluginFile,
 					PluginSymbol:         bolt.PluginSymbol,
 					Port:                 fmt.Sprintf("%d", utils.CONTRACTOR_BASE_PORT+offset),
+					SnapshotVersion:      d.SnapshotVersion,
 				}
 
 				_, ok = d.SpoutMap[bolt.PrevTaskNames[0]]
@@ -246,6 +254,30 @@ func (d *Driver) BuildTopology(topo *topology.Topology) {
 	go d.SuspendRequest()
 }
 
+// Failover for a supervisor down and start restore process
+func (d *Driver) RestoreRequest() {
+	// no topology submitted
+	if d.Topo == nil {
+		return
+	}
+
+	// reset the counter of two snapshot state process responses
+	d.SuspendResponseCount = 0
+	d.SnapshotResponseCount = 0
+
+	// send out restore message to all other supervisors
+	// and let them shutdown current workers
+	b, _ := utils.Marshal(utils.RESTORE_REQUEST, utils.RESTORE_REQUEST)
+	for _, connId := range d.SupervisorIdMap {
+		d.Pub.PublishBoard <- messages.Message{
+			Payload:      b,
+			TargetConnId: connId,
+		}
+	}
+
+	d.BuildTopology(d.Topo)
+}
+
 // Timer to request suspend on spout instances
 // before request backup snapshot for each node workers
 func (d *Driver) SuspendRequest() {
@@ -284,6 +316,7 @@ func (d *Driver) Snapshot() {
 			TargetConnId: connId,
 		}
 	}
+
 }
 
 // Generate Topology Messages for each bolt or spout instance
