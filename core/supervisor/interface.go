@@ -148,54 +148,51 @@ func (s *Supervisor) ListenToWorkers() {
 	// 1. Serialized Variables With Version X          Worker -> Supervisor
 	// 2. W Suspended                                  Worker -> Supervisor
 
-	for _, bw := range s.BoltWorkers {
-		go func() {
-			for {
-				select {
-				case message := <- bw.WorkerC:
-					switch string(message[0]) {
-					case "1":
-						fmt.Println("hi")
-						s.SerializeResponseCounter += 1
-						if (s.SerializeResponseCounter == (len(s.BoltWorkers) + len(s.SpoutWorkers))) {
-							s.SerializeResponseCounter = 0
-							s.SendSerializeResponseToDriver()
-							s.SendResumeRequestToWorkers()
-						}
-					}
-				default:
-				}
-			}
-		}()
-	}
-
-	for _, sw := range s.SpoutWorkers {
-		go func() {
-			for {
-				select {
-				case message := <-sw.WorkerC:
-					switch string(message[0]) {
-					case "1":
-						fmt.Println("hi")
-						s.SerializeResponseCounter += 1
-						if (s.SerializeResponseCounter == (len(s.BoltWorkers) + len(s.SpoutWorkers))) {
-							s.SerializeResponseCounter = 0
-							s.SendSerializeResponseToDriver()
-							s.SendResumeRequestToWorkers()
-						}
-					case "2":
-						s.SendSuspendResponseToDriver()
-					}
-				default:
-				}
-			}
-		}()
-	}
-
 	fmt.Println("Listening To Workers")
-	var wg sync.WaitGroup
-	wg.Add(1)
-	wg.Wait()
+
+	for {
+		for _, bw := range s.BoltWorkers {
+			select {
+			case message := <- bw.WorkerC:
+				fmt.Println(message)
+				switch string(message[0]) {
+				case "1":
+					fmt.Println("hi")
+					s.SerializeResponseCounter += 1
+					if (s.SerializeResponseCounter == (len(s.BoltWorkers) + len(s.SpoutWorkers))) {
+						s.SerializeResponseCounter = 0
+						s.SendSerializeResponseToDriver()
+						s.SendResumeRequestToWorkers()
+					}
+				}
+			default:
+			}
+		}
+
+		for _, sw := range s.SpoutWorkers {
+			select {
+			case message := <-sw.WorkerC:
+				fmt.Println(message)
+				switch string(message[0]) {
+				case "1":
+					fmt.Println("hi")
+					s.SerializeResponseCounter += 1
+					if (s.SerializeResponseCounter == (len(s.BoltWorkers) + len(s.SpoutWorkers))) {
+						s.SerializeResponseCounter = 0
+						s.SendSerializeResponseToDriver()
+						s.SendResumeRequestToWorkers()
+					}
+				case "2":
+					s.SendSuspendResponseToDriver()
+				}
+			default:
+			}
+		}
+	}
+
+	// var wg sync.WaitGroup
+	// wg.Add(1)
+	// wg.Wait()
 }
 
 // Notify the driver that the spout is suspended
