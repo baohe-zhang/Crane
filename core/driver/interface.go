@@ -153,7 +153,8 @@ func (d *Driver) BuildTopology(topo *topology.Topology) {
 	d.GenTopologyMessages("None", &visited, &count, &addrs)
 	d.PrintTopology("None", 0)
 	fmt.Println(addrs)
-	// Stage 1 : Send pull request to supervisor to pull the file
+	// Stage 1 : Send pull request to supervisor to pull the file needed
+	// including the plugin file and state files for restoring
 	for id, _ := range addrs {
 		targetId := d.SupervisorIdMap[uint32(id)]
 		msg := utils.FilePull{topo.Bolts[0].PluginFile}
@@ -165,6 +166,32 @@ func (d *Driver) BuildTopology(topo *topology.Topology) {
 	}
 
 	d.TaskSum = count
+	if d.SnapshotVersion > 0 {
+		for id, tasks := range addrs {
+			targetId := d.SupervisorIdMap[uint32(id)]
+			for _, task := range tasks {
+				spout, ok := task.(*spout.SpoutInst)
+				if ok {
+					stateFileName := spout.Name + "_" + fmt.Sprintf("%d_%d", count, d.SnapshotVersion)
+					msg := utils.FilePull{stateFileName}
+					b, _ := utils.Marshal(utils.FILE_PULL, msg)
+					d.Pub.PublishBoard <- messages.Message{
+						Payload:      b,
+						TargetConnId: targetId,
+					}
+				} else {
+					bolt, _ := task.(*bolt.BoltInst)
+					stateFileName := bolt.Name + "_" + fmt.Sprintf("%d_%d", count, d.SnapshotVersion)
+					msg := utils.FilePull{stateFileName}
+					b, _ := utils.Marshal(utils.FILE_PULL, msg)
+					d.Pub.PublishBoard <- messages.Message{
+						Payload:      b,
+						TargetConnId: targetId,
+					}
+				}
+			}
+		}
+	}
 
 	time.Sleep(5 * time.Second) // Sleep 10s to ensure all supervisors fetch the .so file
 
@@ -309,6 +336,9 @@ func (d *Driver) SuspendRequest() {
 
 // Send snapshot signal to supervisors
 func (d *Driver) Snapshot() {
+	if d.SnapshotVersion == 0 {
+		d.SnapshotVersion = 1
+	}
 	for _, connId := range d.SupervisorIdMap {
 		b, _ := utils.Marshal(utils.SNAPSHOT_REQUEST, d.SnapshotVersion)
 		d.Pub.PublishBoard <- messages.Message{
