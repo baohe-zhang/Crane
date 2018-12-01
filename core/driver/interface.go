@@ -20,7 +20,7 @@ const ()
 // dispaching the spouts or bolts task
 type Driver struct {
 	Pub                   *messages.Publisher
-	Topo                  topology.Topology
+	Topo                  *topology.Topology
 	SupervisorIdMap       []string
 	LockSIM               sync.RWMutex
 	TopologyGraph         map[string][]interface{}
@@ -93,7 +93,7 @@ func (d *Driver) StartDaemon() {
 					}
 					topo := &topology.Topology{}
 					utils.Unmarshal(payload.Content, topo)
-					d.Topo = *topo
+					d.Topo = topo
 					d.BuildTopology(topo)
 				// Spout instance responses
 				case utils.SUSPEND_RESPONSE:
