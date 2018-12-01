@@ -10,6 +10,7 @@ import (
 	"hash/fnv"
 	"log"
 	"net"
+	"sort"
 	"sync"
 	"time"
 )
@@ -175,11 +176,19 @@ func (d *Driver) BuildTopology(topo *topology.Topology) {
 
 	d.TaskSum = count
 
+	// To store the keys in slice in sorted order
+	var keys []int
+	for k := range addrs {
+		keys = append(keys, k)
+	}
+	sort.Ints(keys)
+
 	count = 1
 	if d.SnapshotVersion > 0 {
-		for id, tasks := range addrs {
-			time.Sleep(200 * time.Millisecond)
-			targetId := d.SupervisorIdMap[uint32(id)]
+		for _, k := range keys {
+			tasks := addrs[k]
+			time.Sleep(20 * time.Millisecond)
+			targetId := d.SupervisorIdMap[uint32(k)]
 			for _, task := range tasks {
 				spout, ok := task.(*spout.SpoutInst)
 				if ok {
@@ -209,7 +218,8 @@ func (d *Driver) BuildTopology(topo *topology.Topology) {
 
 	// Stage 2 : Send the task message information to supervisors
 	count = 1
-	for id, tasks := range addrs {
+	for _, id := range keys {
+		tasks := addrs[id]
 		targetId := d.SupervisorIdMap[uint32(id)]
 		for offset, task := range tasks {
 			time.Sleep(20 * time.Millisecond)

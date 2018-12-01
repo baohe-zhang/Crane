@@ -199,7 +199,7 @@ func (sw *SpoutWorker) DeserializeVariables(version string) {
 	fmt.Printf("%s start deserializing version %s\n", sw.Name, version)
 	// Open the local file that stores the variables' binary value
 	filename := fmt.Sprintf("%s_%s", sw.Name, version)
-	b, err := ioutil.ReadFile(filename)
+	b, err := ioutil.ReadFile("./" + filename)
 	if err != nil {
 		fmt.Println(err)
 		os.Exit(1)
