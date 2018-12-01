@@ -32,6 +32,7 @@ type SpoutWorker struct {
 	SupervisorC chan string
 	WorkerC chan string
 	suspend bool
+	suspendWg sync.WaitGroup
 }
 
 func NewSpoutWorker(name string, pluginFilename string, pluginSymbol string, port string, 
@@ -93,9 +94,8 @@ func (sw *SpoutWorker) Start() {
 func (sw *SpoutWorker) receiveTuple() {
 	for {
 		if (sw.suspend == true) {
-			var wg sync.WaitGroup
-			wg.Add(1)
-			wg.Wait()
+			sw.suspendWg.Add(1)
+			sw.suspendWg.Wait()
 		}
 		var empty []interface{}
 		var tuple []interface{}
@@ -198,8 +198,9 @@ func (sw *SpoutWorker) TalkWithSupervisor() {
 	// 1. Please Serialize Variables With Version X    Superviosr -> Worker
 	// 2. Please Kill Yourself                         Superviosr -> Worker
 	// 3. Please Suspend                               Superviosr -> Worker
+	// 4. Please Resume                                Superviosr -> Worker
 	// Worker -> Supervisor
-	// 1. W Serialized Variables With Version X        Worker -> Supervisor
+	// 1. Serialized Variables With Version X          Worker -> Supervisor
 	// 2. W Suspended                                  Worker -> Supervisor
 
 	for message := range sw.SupervisorC {
@@ -219,6 +220,11 @@ func (sw *SpoutWorker) TalkWithSupervisor() {
 			sw.suspend = true
 			fmt.Printf("Suspended Spout Worker\n")
 			sw.WorkerC <- fmt.Sprintf("2. %s Suspended", sw.Name)
+
+		case "4":
+			sw.suspend = false
+			sw.suspendWg.Done()
+			fmt.Printf("Resumeed Spout Worker\n")
 		}
 	}
 }

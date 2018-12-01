@@ -23,6 +23,8 @@ type Supervisor struct {
 	SpoutWorkers []*spoutworker.SpoutWorker
 	VmIndexMap   map[int]string
 	FilePathMap  map[string]string
+	SerializeResponseCounter int
+	Mutex sync.Mutex
 }
 
 // Factory mode to return the Supervisor instance
@@ -36,6 +38,7 @@ func NewSupervisor(driverAddr string) *Supervisor {
 	supervisor.SpoutWorkers = make([]*spoutworker.SpoutWorker, 0)
 	supervisor.VmIndexMap = make(map[int]string)
 	supervisor.FilePathMap = make(map[string]string)
+	supervisor.SerializeResponseCounter = 0
 	return supervisor
 }
 
@@ -148,7 +151,14 @@ func (s *Supervisor) ListenToWorkers() {
 			for message := range bw.WorkerC {
 				switch string(message[0]) {
 				case "1":
-					fmt.Println(message)
+					s.Mutex.Lock()
+					s.SerializeResponseCounter += 1
+					if (s.SerializeResponseCounter == (len(s.BoltWorkers) + len(s.SpoutWorkers))) {
+						s.SerializeResponseCounter = 0
+						s.SendSerializeResponseToDriver()
+						s.SendResumeRequestToWorkers()
+					}
+					s.Mutex.Unlock()
 				}
 			}
 		}()
@@ -158,9 +168,15 @@ func (s *Supervisor) ListenToWorkers() {
 			for message := range sw.WorkerC {
 				switch string(message[0]) {
 				case "1":
-					fmt.Println(message)
+					s.Mutex.Lock()
+					s.SerializeResponseCounter += 1
+					if (s.SerializeResponseCounter == (len(s.BoltWorkers) + len(s.SpoutWorkers))) {
+						s.SerializeResponseCounter = 0
+						s.SendSerializeResponseToDriver()
+						s.SendResumeRequestToWorkers()
+					}
+					s.Mutex.Unlock()
 				case "2":
-					fmt.Println(message)
 					s.SendSuspendResponseToDriver()
 				}
 			}
@@ -182,15 +198,27 @@ func (s *Supervisor) SendSuspendResponseToDriver() {
 	}
 }
 
+// Notify the driver that the serialize is finished
+func (s *Supervisor) SendSerializeResponseToDriver() {
+	fmt.Println("Send Serialize Reponse To Driver")
+	b, _ := utils.Marshal(utils.SNAPSHOT_RESPONSE, "OK")
+	s.Sub.Request <- messages.Message{
+		Payload:      b,
+		TargetConnId: s.Sub.Conn.RemoteAddr().String(),
+	}
+}
+
 // Notify all workers to serialize their variables
 func (s *Supervisor) SendSerializeRequestToWorkers(version string) {
 	// Message Type:
 	// Superviosr -> Worker
 	// 1. Please Serialize Variables With Version X    Superviosr -> Worker
 	// 2. Please Kill Yourself                         Superviosr -> Worker
-	// 3. Please Suspend                               Superviosr -> Worker
+	// 3. Please Suspend                               Superviosr -> Spout Worker
+	// 4. Please Resume                                Superviosr -> Spout Worker
 	// Worker -> Supervisor
 	// 1. Serialized Variables With Version X          Worker -> Supervisor
+	// 2. W Suspended                                  Worker -> Supervisor
 
 	for _, bw := range s.BoltWorkers {
 		bw.SupervisorC <- fmt.Sprintf("1. Please Serialize Variables With Version %s", version)
@@ -210,10 +238,17 @@ func (s *Supervisor) SendKillRequestToWorkers() {
 	}
 }
 
-// Send suspend request to spouts
+// Ask spout to suspend
 func (s *Supervisor) SendSuspendRequestToWorkers() {
 	for _, sw := range s.SpoutWorkers {
 		sw.SupervisorC <- fmt.Sprintf("3. Please Suspend")
+	}
+}
+
+// Ask spout to resume
+func (s *Supervisor) SendResumeRequestToWorkers() {
+	for _, sw := range s.SpoutWorkers {
+		sw.SupervisorC <- fmt.Sprintf("4. Please Resume")
 	}
 }
 
