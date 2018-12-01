@@ -15,8 +15,6 @@ import (
 	"time"
 )
 
-const ()
-
 // Driver, the master node daemon server for scheduling and
 // dispaching the spouts or bolts task
 type Driver struct {
@@ -187,7 +185,6 @@ func (d *Driver) BuildTopology(topo *topology.Topology) {
 	if d.SnapshotVersion > 0 {
 		for _, k := range keys {
 			tasks := addrs[k]
-			time.Sleep(20 * time.Millisecond)
 			targetId := d.SupervisorIdMap[uint32(k)]
 			for _, task := range tasks {
 				spout, ok := task.(*spout.SpoutInst)
