@@ -305,8 +305,8 @@ func (bw *BoltWorker) TalkWithSupervisor() {
 		case "1":
 			words := strings.Fields(message)
 			version := words[len(words) - 1]
-			fmt.Printf("%s Serialize Variables With Version %s\n", bw.Name, version)
 			bw.SerializeVariables(version)
+			fmt.Printf("%s Serialize Variables With Version %s\n", bw.Name, version)
 			// Notify the supervisor it serialized the variables
 			time.Sleep(time.Duration(utils.Hash(bw.Name) % 10) * 100 * time.Millisecond) 
 			bw.WorkerC <- fmt.Sprintf("1. %s Serialized Variables With Version %s", bw.Name, version)
