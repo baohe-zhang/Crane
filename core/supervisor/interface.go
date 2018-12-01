@@ -12,6 +12,7 @@ import (
 	"os/user"
 	// "time"
 	"sync"
+	"strconv"
 )
 
 // Supervisor, the slave node for accepting the schedule from the master node
@@ -95,7 +96,7 @@ func (s *Supervisor) StartDaemon() {
 			var version int
 			utils.Unmarshal(payload.Content, &version)
 			fmt.Printf("Receive Snapshot Request With Version %d\n", version)
-			s.SendSerializeRequestToWorkers(string(version))
+			s.SendSerializeRequestToWorkers(strconv.Itoa(version))
 		}
 	}
 }

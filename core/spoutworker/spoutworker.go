@@ -160,8 +160,8 @@ func (sw *SpoutWorker) buildSucIndexMap() {
 // Serialize and store variables into local file
 func (sw *SpoutWorker) SerializeVariables(version string) {
 	// Create file to store
-	// filename := fmt.Sprintf("%s_%s", sw.Name, version)
-	file, err := os.Create("filename")
+	filename := fmt.Sprintf("%s_%s", sw.Name, version)
+	file, err := os.Create(filename)
 	if err != nil {
 		fmt.Println(err)
 		os.Exit(1)
