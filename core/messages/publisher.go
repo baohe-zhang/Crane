@@ -64,6 +64,7 @@ func (pub *Publisher) Close() {
 	pub.RWLock.Lock()
 	for connId, _ := range pub.Channels {
 		close(pub.Channels[connId])
+		delete(pub.Channels, connId)
 	}
 	pub.RWLock.Unlock()
 	pub.Listener.Close()
@@ -76,7 +77,7 @@ func (pub *Publisher) AcceptConns() {
 		// accept connection
 		conn, err := pub.Listener.Accept()
 		if err != nil {
-			log.Fatalln("Fail to accept connection. ", err)
+			log.Println("Fail to accept connection. ", err)
 			break
 		}
 
