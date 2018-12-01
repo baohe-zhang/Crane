@@ -43,8 +43,6 @@ func (s *Supervisor) StartDaemon() {
 	go s.Sub.RequestMessage()
 	go s.Sub.ReadMessage()
 	s.SendJoinRequest()
-	time.Sleep(time.Second)
-	go s.ListenToWorkers()
 
 	for rcvMsg := range s.Sub.PublishBoard {
 		payload := utils.CheckType(rcvMsg.Payload)
@@ -78,6 +76,7 @@ func (s *Supervisor) StartDaemon() {
 			s.SpoutWorkers = append(s.SpoutWorkers, sw)
 
 		case utils.TASK_ALL_DISPATCHED:
+			go s.ListenToWorkers()
 			fmt.Printf("Receive Bolt and Spout Dispatchs\n")
 			for _, sw := range s.SpoutWorkers {
 				go sw.Start()
