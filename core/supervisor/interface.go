@@ -64,8 +64,8 @@ func (s *Supervisor) StartDaemon() {
 			task := &utils.BoltTaskMessage{}
 			utils.Unmarshal(payload.Content, task)
 			log.Printf("Receive Bolt Dispatch %s with Port %s, Previous workers %v\n", task.Name, task.Port, task.PrevBoltAddr)
-			supervisorC := make(chan string, 100) // Channel to talk to the worker
-			workerC := make(chan string, 100) // Channel to listen to the worker
+			supervisorC := make(chan string) // Channel to talk to the worker
+			workerC := make(chan string) // Channel to listen to the worker
 			bw := boltworker.NewBoltWorker(10, task.Name, "./"+task.PluginFile, task.PluginSymbol, 
 				task.Port, task.PrevBoltAddr, task.PrevBoltGroupingHint, task.PrevBoltFieldIndex,
 				task.SuccBoltGroupingHint, task.SuccBoltFieldIndex, supervisorC, workerC)
@@ -75,8 +75,8 @@ func (s *Supervisor) StartDaemon() {
 			task := &utils.SpoutTaskMessage{}
 			utils.Unmarshal(payload.Content, task)
 			log.Printf("Receive Spout Dispatch %s with Port %s\n", task.Name, task.Port)
-			supervisorC := make(chan string, 100)
-			workerC := make(chan string, 100)
+			supervisorC := make(chan string)
+			workerC := make(chan string)
 			sw := spoutworker.NewSpoutWorker(task.Name, "./"+task.PluginFile, task.PluginSymbol, task.Port, 
 				task.GroupingHint, task.FieldIndex, supervisorC, workerC)
 			s.SpoutWorkers = append(s.SpoutWorkers, sw)
