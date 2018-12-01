@@ -12,6 +12,7 @@ import (
 	"strings"
 	"sync"
 	"time"
+	"log"
 )
 
 const (
@@ -117,7 +118,7 @@ func (bw *BoltWorker) Start() {
 	defer close(bw.tuples)
 	defer close(bw.results)
 
-	fmt.Printf("bolt worker %s start\n", bw.Name)
+	log.Printf("Bolt Worker %s Start\n", bw.Name)
 
 	// Start publisher
 	bw.publisher = messages.NewPublisher(":" + bw.port)
@@ -145,13 +146,13 @@ func (bw *BoltWorker) Start() {
 	bw.wg.Add(1)
 	bw.wg.Wait()
 	bw.publisher.Close()
-	fmt.Printf("Bolt Worker %s Terminates\n", bw.Name)
+	log.Printf("Bolt Worker %s Terminates\n", bw.Name)
 }
 
 func (bw *BoltWorker) receiveTuple() {
 	defer func() {
 		if r := recover(); r != nil {
-			fmt.Println("Recovered in f", r)
+			log.Println("Recovered in f", r)
 		}
 	}()
 	for {
@@ -218,7 +219,7 @@ func (e *Executor) processTuple(tuple []interface{}) {
 func (bw *BoltWorker) outputTuple() {
 	defer func() {
 		if r := recover(); r != nil {
-			fmt.Println("Recovered in f", r)
+			log.Println("Recovered in f", r)
 		}
 	}()
 	switch bw.sucGrouping {
@@ -264,6 +265,7 @@ func (bw *BoltWorker) outputTuple() {
 
 // Build a successor boltworker's [index : netaddr] map
 func (bw *BoltWorker) buildSucIndexMap() {
+	log.Printf("%s Start Building Successors Index Map\n", bw.Name)
 	bw.publisher.Pool.Range(func(id string, conn net.Conn) {
 		bw.rwmutex.Lock()
 		bw.sucIndexMap[len(bw.sucIndexMap)] = id
@@ -273,7 +275,7 @@ func (bw *BoltWorker) buildSucIndexMap() {
 
 // Serialize and store executors' variables into local file
 func (bw *BoltWorker) SerializeVariables(version string) {
-	fmt.Printf("%s start serializing version %s\n", bw.Name, version)
+	log.Printf("%s Start Serializing Variables With Version %s\n", bw.Name, version)
 	// Merge all executors' variables
 	var bins []interface{}
 	for _, executor := range bw.executors {
@@ -296,7 +298,7 @@ func (bw *BoltWorker) SerializeVariables(version string) {
 
 // Deserialize executors' variables from local file
 func (bw *BoltWorker) DeserializeVariables(version string) {
-	fmt.Printf("%s start deserializing version %s\n", bw.Name, version)
+	fmt.Printf("%s Start Deserializing Variables With Version %s\n", bw.Name, version)
 	// Open the local file that stores the variables' binary value
 	filename := fmt.Sprintf("%s_%s", bw.Name, version)
 	b, err := ioutil.ReadFile(filename)
@@ -329,7 +331,7 @@ func (bw *BoltWorker) TalkWithSupervisor() {
 
 	defer func() {
 		if r := recover(); r != nil {
-			fmt.Println("Recovered in f", r)
+			log.Println("Recovered in f", r)
 		}
 	}()
 
@@ -342,7 +344,6 @@ func (bw *BoltWorker) TalkWithSupervisor() {
 				version := words[len(words)-1]
 				bw.SerializeVariables(version)
 				bw.Version = version
-				fmt.Printf("%s Serialize Variables With Version %s\n", bw.Name, version)
 				// Notify the supervisor it serialized the variables
 				bw.WorkerC <- fmt.Sprintf("1. %s Serialized Variables With Version %s", bw.Name, version)
 
