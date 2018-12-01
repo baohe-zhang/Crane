@@ -63,7 +63,6 @@ func (pub *Publisher) PublishMessage(msgChan chan Message) {
 func (pub *Publisher) Close() {
 	pub.RWLock.Lock()
 	for connId, _ := range pub.Channels {
-		close(pub.Channels[connId])
 		delete(pub.Channels, connId)
 	}
 	pub.RWLock.Unlock()
