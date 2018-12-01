@@ -10,7 +10,7 @@ import (
 	"log"
 	"os/exec"
 	"os/user"
-	// "time"
+	"time"
 	"sync"
 	"strconv"
 )
@@ -226,9 +226,11 @@ func (s *Supervisor) SendSerializeRequestToWorkers(version string) {
 	fmt.Println("Send Serialize Request to Workers")
 	for _, bw := range s.BoltWorkers {
 		bw.SupervisorC <- fmt.Sprintf("1. Please Serialize Variables With Version %s", version)
+		time.Sleep(20 * time.Millisecond)
 	}
 	for _, sw := range s.SpoutWorkers {
 		sw.SupervisorC <- fmt.Sprintf("1. Please Serialize Variables With Version %s", version)
+		time.Sleep(20 * time.Millisecond)
 	}
 }
 
@@ -237,9 +239,11 @@ func (s *Supervisor) SendKillRequestToWorkers() {
 	fmt.Println("Send Kill Request to Workers")
 	for _, bw := range s.BoltWorkers {
 		bw.SupervisorC <- fmt.Sprintf("2. Please Kill Yourself")
+		time.Sleep(20 * time.Millisecond)
 	}
 	for _, sw := range s.SpoutWorkers {
 		sw.SupervisorC <- fmt.Sprintf("2. Please Kill Yourself")
+		time.Sleep(20 * time.Millisecond)
 	}
 }
 
