@@ -8,8 +8,10 @@ import (
 	"flag"
 	"fmt"
 	"log"
+	"os"
 	"os/exec"
 	"os/user"
+	"path/filepath"
 	"strconv"
 	"sync"
 	"time"
@@ -327,6 +329,17 @@ func main() {
 	} else {
 		ip = *driverIpPtr
 		log.Println("Enter Remote Mode")
+	}
+
+	// remove all sdfs files set up before
+	files, err := filepath.Glob("./*_*")
+	if err != nil {
+		log.Println(err)
+	}
+	for _, f := range files {
+		if err := os.Remove(f); err != nil {
+			log.Println(err)
+		}
 	}
 
 	LocalIP := utils.GetLocalIP().String()
