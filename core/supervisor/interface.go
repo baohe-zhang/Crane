@@ -92,10 +92,10 @@ func (s *Supervisor) StartDaemon() {
 			s.SendSuspendRequestToWorkers()
 
 		case utils.SNAPSHOT_REQUEST:
-			var version *int
-			utils.Unmarshal(payload.Content, version)
-			fmt.Printf("Receive Snapshot Request With Version %d\n", *version)
-			s.SendSerializeRequestToWorkers(string(*version))
+			var version int
+			utils.Unmarshal(payload.Content, &version)
+			fmt.Printf("Receive Snapshot Request With Version %d\n", version)
+			s.SendSerializeRequestToWorkers(string(version))
 		}
 	}
 }
