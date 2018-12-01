@@ -173,7 +173,7 @@ func (s *Supervisor) ListenToWorkers() {
 
 // Notify the driver that the spout is suspended
 func (s *Supervisor) SendSuspendResponseToDriver() {
-	fmt.Println("Send suspend reponse to driver")
+	fmt.Println("Send Suspend Reponse To Driver")
 	b, _ := utils.Marshal(utils.SUSPEND_RESPONSE, "OK")
 	s.Sub.Request <- messages.Message{
 		Payload:      b,

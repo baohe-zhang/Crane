@@ -205,8 +205,8 @@ func (sw *SpoutWorker) TalkWithSupervisor() {
 		case "1":
 			words := strings.Fields(message)
 			version := words[len(words) - 1]
-			sw.SerializeVariables(version)
 			fmt.Printf("Serialized Variables With Version %s\n", version)
+			sw.SerializeVariables(version)
 			// Notify the supervisor it serialized the variables
 			sw.WorkerC <- fmt.Sprintf("1. %s Serialized Variables With Version %s", sw.Name, version)
 
