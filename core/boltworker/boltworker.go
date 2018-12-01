@@ -103,7 +103,7 @@ func NewBoltWorker(numWorkers int, name string,
 	}
 
 	// Start from restore, read state file to get variables
-	if (version >= 0) {
+	if (version > 0) {
 		bw.DeserializeVariables(strconv.Itoa(version))
 	}
 	bw.Version = strconv.Itoa(version)
@@ -256,6 +256,7 @@ func (bw *BoltWorker) buildSucIndexMap() {
 
 // Serialize and store executors' variables into local file
 func (bw *BoltWorker) SerializeVariables(version string) {
+	fmt.Printf("%s start serializing version %s\n", bw.Name, version)
 	// Merge all executors' variables
 	var bins []interface{}
 	for _, executor := range bw.executors {
@@ -278,6 +279,7 @@ func (bw *BoltWorker) SerializeVariables(version string) {
 
 // Deserialize executors' variables from local file
 func (bw *BoltWorker) DeserializeVariables(version string) {
+	fmt.Printf("%s start deserializing version %s\n", bw.Name, version)
 	// Open the local file that stores the variables' binary value
 	filename := fmt.Sprintf("%s_%s", bw.Name, version)
 	b, err := ioutil.ReadFile(filename)

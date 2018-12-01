@@ -67,7 +67,7 @@ func NewSpoutWorker(name string, pluginFilename string, pluginSymbol string, por
 	}
 
 	// Start from restore, read state file to get variables
-	if (version >= 0) {
+	if (version > 0) {
 		sw.DeserializeVariables(strconv.Itoa(version))
 	}
 	sw.Version = strconv.Itoa(version)
@@ -165,6 +165,7 @@ func (sw *SpoutWorker) buildSucIndexMap() {
 
 // Serialize and store variables into local file
 func (sw *SpoutWorker) SerializeVariables(version string) {
+	fmt.Printf("%s start serializing version %s\n", sw.Name, version)
 	// Create file to store
 	filename := fmt.Sprintf("%s_%s", sw.Name, version)
 	file, err := os.Create(filename)
@@ -181,6 +182,7 @@ func (sw *SpoutWorker) SerializeVariables(version string) {
 
 // Deserialize variables from local file
 func (sw *SpoutWorker) DeserializeVariables(version string) {
+	fmt.Printf("%s start deserializing version %s\n", sw.Name, version)
 	// Open the local file that stores the variables' binary value
 	filename := fmt.Sprintf("%s_%s", sw.Name, version)
 	b, err := ioutil.ReadFile(filename)
