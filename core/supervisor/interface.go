@@ -147,7 +147,7 @@ func (s *Supervisor) ListenToWorkers() {
 	// Worker -> Supervisor
 	// 1. Serialized Variables With Version X          Worker -> Supervisor
 	// 2. W Suspended                                  Worker -> Supervisor
-	
+
 	for _, bw := range s.BoltWorkers {
 		go func() {
 			for {
@@ -163,6 +163,7 @@ func (s *Supervisor) ListenToWorkers() {
 							s.SendResumeRequestToWorkers()
 						}
 					}
+				default:
 				}
 			}
 		}()
@@ -185,6 +186,7 @@ func (s *Supervisor) ListenToWorkers() {
 					case "2":
 						s.SendSuspendResponseToDriver()
 					}
+				default:
 				}
 			}
 		}()
