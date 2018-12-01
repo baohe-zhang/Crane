@@ -50,69 +50,74 @@ func (s *Supervisor) StartDaemon() {
 	go s.Sub.ReadMessage()
 	s.SendJoinRequest()
 
-	for rcvMsg := range s.Sub.PublishBoard {
-		payload := utils.CheckType(rcvMsg.Payload)
+	for {
+		select {
+		case rcvMsg := <-s.Sub.PublishBoard:
+			payload := utils.CheckType(rcvMsg.Payload)
 
-		switch payload.Header.Type {
-		case utils.FILE_PULL:
-			filePull := &utils.FilePull{}
-			utils.Unmarshal(payload.Content, filePull)
-			log.Printf("Receive File Pull with Filename %s\n", filePull.Filename)
-			if filePull.Filename != "None" {
-				s.GetFile(filePull.Filename)
+			switch payload.Header.Type {
+			case utils.FILE_PULL:
+				filePull := &utils.FilePull{}
+				utils.Unmarshal(payload.Content, filePull)
+				log.Printf("Receive File Pull with Filename %s\n", filePull.Filename)
+				if filePull.Filename != "None" {
+					s.GetFile(filePull.Filename)
+				}
+
+			case utils.BOLT_TASK:
+				task := &utils.BoltTaskMessage{}
+				utils.Unmarshal(payload.Content, task)
+				log.Printf("Receive Bolt Dispatch %s with Port %s, Previous workers %v\n", task.Name, task.Port, task.PrevBoltAddr)
+				supervisorC := make(chan string) // Channel to talk to the worker
+				workerC := make(chan string)     // Channel to listen to the worker
+				bw := boltworker.NewBoltWorker(10, task.Name, "./"+task.PluginFile, task.PluginSymbol,
+					task.Port, task.PrevBoltAddr, task.PrevBoltGroupingHint, task.PrevBoltFieldIndex,
+					task.SuccBoltGroupingHint, task.SuccBoltFieldIndex, supervisorC, workerC, task.SnapshotVersion)
+				s.BoltWorkers = append(s.BoltWorkers, bw)
+
+			case utils.SPOUT_TASK:
+				task := &utils.SpoutTaskMessage{}
+				utils.Unmarshal(payload.Content, task)
+				log.Printf("Receive Spout Dispatch %s with Port %s\n", task.Name, task.Port)
+				supervisorC := make(chan string)
+				workerC := make(chan string)
+				sw := spoutworker.NewSpoutWorker(task.Name, "./"+task.PluginFile, task.PluginSymbol, task.Port,
+					task.GroupingHint, task.FieldIndex, supervisorC, workerC, task.SnapshotVersion)
+				s.SpoutWorkers = append(s.SpoutWorkers, sw)
+
+			case utils.TASK_ALL_DISPATCHED:
+				fmt.Printf("Receive Bolt and Spout Dispatchs\n")
+				for _, sw := range s.SpoutWorkers {
+					go sw.Start()
+				}
+				for _, bw := range s.BoltWorkers {
+					go bw.Start()
+				}
+				time.Sleep(20 * time.Millisecond)
+				go s.ListenToWorkers()
+
+			case utils.SUSPEND_REQUEST:
+				fmt.Printf("Receive Suspend Request From Driver\n")
+				s.SendSuspendRequestToWorkers()
+
+			case utils.SNAPSHOT_REQUEST:
+				var version int
+				utils.Unmarshal(payload.Content, &version)
+				fmt.Printf("Receive Snapshot Request With Version %d\n", version)
+				s.SendSerializeRequestToWorkers(strconv.Itoa(version))
+
+			case utils.RESTORE_REQUEST:
+				s.ControlC <- "Close"
+				time.Sleep(100 * time.Millisecond)
+				s.SendKillRequestToWorkers()
+				// Clear supervisor's worker map
+				s.BoltWorkers = make([]*boltworker.BoltWorker, 0)
+				s.SpoutWorkers = make([]*spoutworker.SpoutWorker, 0)
 			}
-
-		case utils.BOLT_TASK:
-			task := &utils.BoltTaskMessage{}
-			utils.Unmarshal(payload.Content, task)
-			log.Printf("Receive Bolt Dispatch %s with Port %s, Previous workers %v\n", task.Name, task.Port, task.PrevBoltAddr)
-			supervisorC := make(chan string) // Channel to talk to the worker
-			workerC := make(chan string)     // Channel to listen to the worker
-			bw := boltworker.NewBoltWorker(10, task.Name, "./"+task.PluginFile, task.PluginSymbol,
-				task.Port, task.PrevBoltAddr, task.PrevBoltGroupingHint, task.PrevBoltFieldIndex,
-				task.SuccBoltGroupingHint, task.SuccBoltFieldIndex, supervisorC, workerC, task.SnapshotVersion)
-			s.BoltWorkers = append(s.BoltWorkers, bw)
-
-		case utils.SPOUT_TASK:
-			task := &utils.SpoutTaskMessage{}
-			utils.Unmarshal(payload.Content, task)
-			log.Printf("Receive Spout Dispatch %s with Port %s\n", task.Name, task.Port)
-			supervisorC := make(chan string)
-			workerC := make(chan string)
-			sw := spoutworker.NewSpoutWorker(task.Name, "./"+task.PluginFile, task.PluginSymbol, task.Port,
-				task.GroupingHint, task.FieldIndex, supervisorC, workerC, task.SnapshotVersion)
-			s.SpoutWorkers = append(s.SpoutWorkers, sw)
-
-		case utils.TASK_ALL_DISPATCHED:
-			fmt.Printf("Receive Bolt and Spout Dispatchs\n")
-			for _, sw := range s.SpoutWorkers {
-				go sw.Start()
-			}
-			for _, bw := range s.BoltWorkers {
-				go bw.Start()
-			}
-			time.Sleep(20 * time.Millisecond)
-			go s.ListenToWorkers()
-
-		case utils.SUSPEND_REQUEST:
-			fmt.Printf("Receive Suspend Request From Driver\n")
-			s.SendSuspendRequestToWorkers()
-
-		case utils.SNAPSHOT_REQUEST:
-			var version int
-			utils.Unmarshal(payload.Content, &version)
-			fmt.Printf("Receive Snapshot Request With Version %d\n", version)
-			s.SendSerializeRequestToWorkers(strconv.Itoa(version))
-
-		case utils.RESTORE_REQUEST:
-			s.ControlC <- "Close"
-			time.Sleep(100 * time.Millisecond)
-			s.SendKillRequestToWorkers()
-			// Clear supervisor's worker map
-			s.BoltWorkers = make([]*boltworker.BoltWorker, 0)
-			s.SpoutWorkers = make([]*spoutworker.SpoutWorker, 0)
+		default:
 		}
 	}
+
 }
 
 // Send join request to join the cluster
