@@ -38,7 +38,7 @@ func (sub *Subscriber) ReadMessage() {
 		request, _, err := reader.ReadLine()
 		if err != nil {
 			// stop reading buffer and exit goroutine
-			log.Printf("Can't read line from socket: %s\n", err)
+			log.Println("Can't read line from socket:", err)
 			break
 		} else {
 			// check request before pushing into channel
@@ -48,6 +48,7 @@ func (sub *Subscriber) ReadMessage() {
 			// Connection Id as the address
 			connId := sub.Conn.RemoteAddr().String()
 			// push message from subscriber to message channel
+			log.Printf("Received message on socket %s", connId)
 			sub.PublishBoard <- Message{
 				Payload:      request,
 				SourceConnId: connId,
@@ -62,7 +63,7 @@ func (sub *Subscriber) RequestMessage() {
 	for {
 		message := <-sub.Request
 
-		log.Printf("Going to send message '%s' on socket %s", message.Payload, message.TargetConnId)
+		log.Println("Going to send message on socket %s", message.TargetConnId)
 
 		// send message to targetConn
 		writer := bufio.NewWriter(sub.Conn)

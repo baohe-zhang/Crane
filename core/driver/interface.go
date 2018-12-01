@@ -15,8 +15,6 @@ import (
 	"time"
 )
 
-const ()
-
 // Driver, the master node daemon server for scheduling and
 // dispaching the spouts or bolts task
 type Driver struct {
@@ -59,7 +57,6 @@ func (d *Driver) StartDaemon() {
 			d.Pub.RWLock.RLock()
 			select {
 			case supervisorMsg := <-channel:
-				log.Printf("Message from %s: %s\n", connId, supervisorMsg.Payload)
 				payload := utils.CheckType(supervisorMsg.Payload)
 				log.Printf("Receiving %s request form %s\n", payload.Header.Type, connId)
 				// parse the header information
@@ -159,7 +156,6 @@ func (d *Driver) BuildTopology(topo *topology.Topology) {
 	addrs := make(map[int][]interface{})
 	d.GenTopologyMessages("None", &visited, &count, &addrs)
 	d.PrintTopology("None", 0)
-	fmt.Println(addrs)
 	// Stage 1 : Send pull request to supervisor to pull the file needed
 	// including the plugin file and state files for restoring
 	if d.SnapshotVersion == 0 {
@@ -182,12 +178,12 @@ func (d *Driver) BuildTopology(topo *topology.Topology) {
 		keys = append(keys, k)
 	}
 	sort.Ints(keys)
+	log.Println("Supervisors", addrs, keys)
 
 	count = 1
 	if d.SnapshotVersion > 0 {
 		for _, k := range keys {
 			tasks := addrs[k]
-			time.Sleep(20 * time.Millisecond)
 			targetId := d.SupervisorIdMap[uint32(k)]
 			for _, task := range tasks {
 				spout, ok := task.(*spout.SpoutInst)
@@ -214,7 +210,7 @@ func (d *Driver) BuildTopology(topo *topology.Topology) {
 		}
 	}
 
-	time.Sleep(5 * time.Second) // Sleep 10s to ensure all supervisors fetch the .so file
+	time.Sleep(8 * time.Second) // Sleep 10s to ensure all supervisors fetch the .so file
 
 	// Stage 2 : Send the task message information to supervisors
 	count = 1
