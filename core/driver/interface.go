@@ -103,7 +103,7 @@ func (d *Driver) StartDaemon() {
 				case utils.SNAPSHOT_RESPONSE:
 					d.SnapshotResponseCount++
 
-					if d.SnapshotResponseCount == d.TaskSum {
+					if d.SnapshotResponseCount == len(d.SupervisorIdMap) {
 						// Confirm a correct version snapshot has completed
 						d.SnapshotVersion++
 						d.SnapshotResponseCount = 0
@@ -160,7 +160,7 @@ func (d *Driver) BuildTopology(topo *topology.Topology) {
 
 	d.TaskSum = count
 
-	time.Sleep(10 * time.Second) // Sleep 10s to ensure all supervisors fetch the .so file
+	time.Sleep(5 * time.Second) // Sleep 10s to ensure all supervisors fetch the .so file
 
 	// Stage 2 : Send the task message information to supervisors
 	count = 1
