@@ -230,30 +230,34 @@ func (sw *SpoutWorker) TalkWithSupervisor() {
 		}
 	}()
 
-	for message := range sw.SupervisorC {
-		switch string(message[0]) {
-		case "1":
-			words := strings.Fields(message)
-			version := words[len(words)-1]
-			sw.SerializeVariables(version)
-			sw.Version = version
-			fmt.Printf("%s Serialized Variables With Version %s\n", sw.Name, version)
-			// Notify the supervisor it serialized the variables
-			sw.WorkerC <- fmt.Sprintf("1. %s Serialized Variables With Version %s", sw.Name, version)
+	for {
+		select {
+		case message := <-sw.SupervisorC:
+			switch string(message[0]) {
+			case "1":
+				words := strings.Fields(message)
+				version := words[len(words)-1]
+				sw.SerializeVariables(version)
+				sw.Version = version
+				fmt.Printf("%s Serialized Variables With Version %s\n", sw.Name, version)
+				// Notify the supervisor it serialized the variables
+				sw.WorkerC <- fmt.Sprintf("1. %s Serialized Variables With Version %s", sw.Name, version)
 
-		case "2":
-			sw.wg.Done()
+			case "2":
+				sw.wg.Done()
 
-		case "3":
-			sw.suspend = true
-			sw.suspendWg.Add(1)
-			fmt.Printf("%s Suspended\n", sw.Name)
-			sw.WorkerC <- fmt.Sprintf("2. %s Suspended", sw.Name)
+			case "3":
+				sw.suspend = true
+				sw.suspendWg.Add(1)
+				fmt.Printf("%s Suspended\n", sw.Name)
+				sw.WorkerC <- fmt.Sprintf("2. %s Suspended", sw.Name)
 
-		case "4":
-			sw.suspend = false
-			sw.suspendWg.Done()
-			fmt.Printf("%s Resumeed\n", sw.Name)
+			case "4":
+				sw.suspend = false
+				sw.suspendWg.Done()
+				fmt.Printf("%s Resumeed\n", sw.Name)
+			}
+		default:
 		}
 	}
 }

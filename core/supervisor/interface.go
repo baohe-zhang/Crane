@@ -180,8 +180,8 @@ func (s *Supervisor) ListenToWorkers() {
 					s.SerializeResponseCounter += 1
 					if s.SerializeResponseCounter == (len(s.BoltWorkers) + len(s.SpoutWorkers)) {
 						s.SerializeResponseCounter = 0
-						s.SendSerializeResponseToDriver()
 						s.SendResumeRequestToWorkers()
+						s.SendSerializeResponseToDriver()
 					}
 				case "2":
 					s.SendSuspendResponseToDriver()
