@@ -287,13 +287,13 @@ func (s *Supervisor) GetFile(remoteName string) {
 	// Execute the sdfs client to get the remote file
 	usr, _ := user.Current()
 	usrHome := usr.HomeDir
-	exec.Command(usrHome+"/go/src/crane/tools/sdfs_client/sdfs_client", "-master", "fa18-cs425-g29-01.cs.illinois.edu:5000", "get", remoteName, "./"+remoteName)
+	// exec.Command(usrHome+"/go/src/crane/tools/sdfs_client/sdfs_client", "-master", "fa18-cs425-g29-01.cs.illinois.edu:5000", "get", remoteName, "./"+remoteName)
 	// cmd := exec.Command(usrHome+"/go/src/crane/tools/sdfs_client/sdfs_client", "-master", "fa18-cs425-g29-01.cs.illinois.edu:5000", "get", remoteName, "./"+remoteName)
-	// stdoutStderr, err := cmd.CombinedOutput()
-	// if err != nil {
-	// 	log.Fatal(err)
-	// }
-	// log.Printf("%s\n", stdoutStderr)
+	stdoutStderr, err := cmd.CombinedOutput()
+	if err != nil {
+		log.Fatal(err)
+	}
+	log.Printf("%s\n", stdoutStderr)
 	s.FilePathMap[remoteName] = "./" + remoteName
 	log.Printf("Get File %s", remoteName)
 }
@@ -304,13 +304,13 @@ func (s *Supervisor) PutFile(localPath, remoteName string) {
 	// Execute the sdfs client to put the local file into remote
 	usr, _ := user.Current()
 	usrHome := usr.HomeDir
-	exec.Command(usrHome+"/go/src/crane/tools/sdfs_client/sdfs_client", "-master", "fa18-cs425-g29-01.cs.illinois.edu:5000", "put", localPath, remoteName)
+	// exec.Command(usrHome+"/go/src/crane/tools/sdfs_client/sdfs_client", "-master", "fa18-cs425-g29-01.cs.illinois.edu:5000", "put", localPath, remoteName)
 	// cmd := exec.Command(usrHome+"/go/src/crane/tools/sdfs_client/sdfs_client", "-master", "fa18-cs425-g29-01.cs.illinois.edu:5000", "put", localPath, remoteName)
-	// stdoutStderr, err := cmd.CombinedOutput()
-	// if err != nil {
-	// 	log.Fatal(err)
-	// }
-	// log.Printf("%s\n", stdoutStderr)
+	stdoutStderr, err := cmd.CombinedOutput()
+	if err != nil {
+		log.Fatal(err)
+	}
+	log.Printf("%s\n", stdoutStderr)
 	log.Printf("Put File %s", remoteName)
 }
 
