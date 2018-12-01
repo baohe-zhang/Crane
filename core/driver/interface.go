@@ -192,8 +192,8 @@ func (d *Driver) BuildTopology(topo *topology.Topology) {
 						TargetConnId: targetId,
 					}
 				}
+				count++
 			}
-			count++
 		}
 	}
 
