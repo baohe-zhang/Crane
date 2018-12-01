@@ -37,9 +37,9 @@ func ProcFunc(tuple []interface{}, result *[]interface{}, variables *[]interface
 func NextTuple(tuple []interface{}, result *[]interface{}, variables *[]interface{}) error {
 	// Variables
 	words := []string{"china", "usa", "japan", "korea", "russia", "india", "singapore"}
-	var counter *float64
+	counter := new(float64)
 	if (len(*variables) == 0) {
-		counter = new(float64)
+		// counter = new(float64)
 		*variables = append(*variables, counter)
 	}
 	counter = ((*variables)[0]).(*float64)
