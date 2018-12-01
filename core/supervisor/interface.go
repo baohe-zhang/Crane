@@ -145,40 +145,51 @@ func (s *Supervisor) ListenToWorkers() {
 
 	for {
 		for _, bw := range s.BoltWorkers {
-			for _, sw := range s.SpoutWorkers {
-				select {
-				// Channel to close this goroutine
-				case signal := <-s.ControlC:
-					fmt.Printf("Receive Signal %s, function return\n", signal)
-					return
-				case message := <-bw.WorkerC:
-					fmt.Println(message)
-					switch string(message[0]) {
-					case "1":
-						go s.PutFile("./"+bw.Name+"_"+bw.Version, bw.Name+"_"+bw.Version)
-						s.SerializeResponseCounter += 1
-						if s.SerializeResponseCounter == (len(s.BoltWorkers) + len(s.SpoutWorkers)) {
-							s.SerializeResponseCounter = 0
-							s.SendSerializeResponseToDriver()
-							s.SendResumeRequestToWorkers()
-						}
+			select {
+			// Channel to close this goroutine
+			case signal := <-s.ControlC:
+				fmt.Printf("Receive Signal %s, function return\n", signal)
+				return
+
+			case message := <-bw.WorkerC:
+				fmt.Println(message)
+				switch string(message[0]) {
+				case "1":
+					go s.PutFile("./"+bw.Name+"_"+bw.Version, bw.Name+"_"+bw.Version)
+					s.SerializeResponseCounter += 1
+					if s.SerializeResponseCounter == (len(s.BoltWorkers) + len(s.SpoutWorkers)) {
+						s.SerializeResponseCounter = 0
+						s.SendSerializeResponseToDriver()
+						s.SendResumeRequestToWorkers()
 					}
-				case message := <-sw.WorkerC:
-					fmt.Println(message)
-					switch string(message[0]) {
-					case "1":
-						go s.PutFile("./"+sw.Name+"_"+sw.Version, sw.Name+"_"+sw.Version)
-						s.SerializeResponseCounter += 1
-						if s.SerializeResponseCounter == (len(s.BoltWorkers) + len(s.SpoutWorkers)) {
-							s.SerializeResponseCounter = 0
-							s.SendResumeRequestToWorkers()
-							s.SendSerializeResponseToDriver()
-						}
-					case "2":
-						s.SendSuspendResponseToDriver()
-					}
-				default:
 				}
+
+			default:
+			}
+		}
+
+		for _, sw := range s.SpoutWorkers {
+			select {
+			// Channel to close this goroutine
+			case signal := <-s.ControlC:
+				fmt.Printf("Receive Signal %s, function return\n", signal)
+				return
+
+			case message := <-sw.WorkerC:
+				fmt.Println(message)
+				switch string(message[0]) {
+				case "1":
+					go s.PutFile("./"+sw.Name+"_"+sw.Version, sw.Name+"_"+sw.Version)
+					s.SerializeResponseCounter += 1
+					if s.SerializeResponseCounter == (len(s.BoltWorkers) + len(s.SpoutWorkers)) {
+						s.SerializeResponseCounter = 0
+						s.SendResumeRequestToWorkers()
+						s.SendSerializeResponseToDriver()
+					}
+				case "2":
+					s.SendSuspendResponseToDriver()
+				}
+			default:
 			}
 		}
 
