@@ -148,6 +148,7 @@ func (s *Supervisor) ListenToWorkers() {
 	// 1. Serialized Variables With Version X          Worker -> Supervisor
 	// 2. W Suspended                                  Worker -> Supervisor
 	for _, bw := range s.BoltWorkers {
+		fmt.Println("woshi")
 		go func() {
 			for message := range bw.WorkerC {
 				fmt.Println(message)
@@ -166,6 +167,7 @@ func (s *Supervisor) ListenToWorkers() {
 		}()
 	}
 	for _, sw := range s.SpoutWorkers {
+		fmt.Println("shabi")
 		go func() {
 			for message := range sw.WorkerC {
 				fmt.Println(message)
