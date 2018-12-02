@@ -112,6 +112,7 @@ func (sw *SpoutWorker) listenToSubscribers() {
 			sw.publisher.RWLock.RLock()
 			select {
 			case message := <- channel:
+				log.Println(message)
 				var workerName string
 				json.Unmarshal(message.Payload, &workerName)
 				words := strings.Split(workerName, "_")
@@ -124,6 +125,7 @@ func (sw *SpoutWorker) listenToSubscribers() {
 				sw.sucIndexMap[boltType][index] = connId
 			default:
 			}
+			sw.publisher.RWLock.RUnlock()
 		}
 	}
 }
