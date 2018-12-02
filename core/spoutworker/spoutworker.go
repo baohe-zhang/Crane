@@ -174,12 +174,16 @@ func (sw *SpoutWorker) outputTuple() {
 }
 
 func (sw *SpoutWorker) buildSucIndexMap() {
-	// 
+	//
+	log.Printf("%s Start Building Successors Index Map\n", sw.Name)
+	log.Printf("receive Map: %v\n", sw.boltIdIndexMap)
 	sw.publisher.Pool.Range(func(id string, conn net.Conn) {
 		sw.rwmutex.Lock()
 		for k, v := range sw.boltIdIndexMap {
+			fmt.Printf("k: %v, v: %v, id: %v\n", k, v, id)
 			index, ok := v[id]
 			if ok {
+				fmt.Printf("ok\n")
 				sw.sucIndexMap[k][index] = id
 			} else {
 				continue
@@ -187,6 +191,7 @@ func (sw *SpoutWorker) buildSucIndexMap() {
 		}
 		sw.rwmutex.Unlock()
 	})
+	log.Printf("Successors Index Map: %v\n", sw.sucIndexMap)
 }
 
 // Serialize and store variables into local file
