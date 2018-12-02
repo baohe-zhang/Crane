@@ -95,7 +95,7 @@ func (sw *SpoutWorker) Start() {
 	// Listen to subscriber, they will tell who they are
 	go sw.listenToSubscribers()
 	time.Sleep(2 * time.Second) // Wait for spout to establish suc index map
-	fmt.Printf("Map: %v", sw.sucIndexMap)
+	fmt.Printf("Map: %v\n", sw.sucIndexMap)
 
 	go sw.receiveTuple()
 	go sw.outputTuple()
@@ -159,7 +159,7 @@ func (sw *SpoutWorker) outputTuple() {
 			bin, _ := json.Marshal(tuple)
 			for _, v := range sw.sucIndexMap {
 				sucid := count % len(v)
-				sucConnId := v[sucid]
+				sucConnId := v[sucid+1]
 				sw.publisher.PublishBoard <- messages.Message{
 					Payload:      bin,
 					TargetConnId: sucConnId,
@@ -172,8 +172,9 @@ func (sw *SpoutWorker) outputTuple() {
 		for tuple := range sw.tuples {
 			bin, _ := json.Marshal(tuple)
 			for _, v := range sw.sucIndexMap {
+				fmt.Printf("v: %v\n", v)
 				sucid := utils.Hash(tuple[sw.sucField]) % len(v)
-				sucConnId := v[sucid]
+				sucConnId := v[sucid+1]
 				sw.publisher.PublishBoard <- messages.Message{
 					Payload:      bin,
 					TargetConnId: sucConnId,
