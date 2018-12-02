@@ -92,10 +92,10 @@ func (s *Supervisor) StartDaemon() {
 				for _, sw := range s.SpoutWorkers {
 					go sw.Start()
 				}
-				time.Sleep(200 * time.Millisecond)
 				for _, bw := range s.BoltWorkers {
 					go bw.Start()
 				}
+				time.Sleep(100 * time.Millisecond)
 				go s.ListenToWorkers()
 
 			case utils.SUSPEND_REQUEST:

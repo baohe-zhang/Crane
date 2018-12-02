@@ -254,6 +254,7 @@ func (d *Driver) BuildTopology(topo *topology.Topology) {
 		}
 	}
 
+	time.Sleep(5 * time.Second)
 	// Stage 2 : Send the task message information to supervisors
 	countMap = make(map[string]int)
 	for _, id := range keys {
@@ -332,7 +333,7 @@ func (d *Driver) BuildTopology(topo *topology.Topology) {
 		}
 	}
 
-	time.Sleep(6 * time.Second)
+	time.Sleep(5 * time.Second)
 
 	// Stage 3 : Send dispatch signal
 	for id, _ := range addrs {
@@ -363,7 +364,7 @@ func (d *Driver) RestoreRequest() {
 	d.SuspendResponseCount = 0
 	d.SnapshotResponseCount = 0
 
-	timer := time.NewTimer(8 * time.Second)
+	timer := time.NewTimer(4 * time.Second)
 	d.CtlTimer = append(d.CtlTimer, timer)
 	go func() {
 		<-timer.C
