@@ -26,7 +26,7 @@ type Driver struct {
 	SpoutMap              map[string]spout.SpoutInst
 	BoltMap               map[string]bolt.BoltInst
 	VmIndexMap            map[int]string
-	VersionCtlTimer       map[int]*time.Timer
+	CtlTimer              []*time.Timer
 	SuspendResponseCount  int
 	SnapshotResponseCount int
 	TaskSum               int
@@ -40,7 +40,7 @@ func NewDriver(addr string) *Driver {
 	driver.Pub = messages.NewPublisher(addr)
 	driver.SupervisorIdMap = make([]string, 0)
 	driver.VmIndexMap = make(map[int]string)
-	driver.VersionCtlTimer = make(map[int]*time.Timer)
+	driver.CtlTimer = make([]*time.Timer, 0)
 	driver.SuspendResponseCount = 0
 	driver.SnapshotResponseCount = 0
 	driver.SnapshotVersion = 0
@@ -78,6 +78,12 @@ func (d *Driver) StartDaemon() {
 						for index, connId_ := range d.SupervisorIdMap {
 							if connId_ == connId {
 								d.SupervisorIdMap = append(d.SupervisorIdMap[:index], d.SupervisorIdMap[index+1:]...)
+								if len(d.CtlTimer) >= 1 {
+									for _, timer := range d.CtlTimer {
+										timer.Stop()
+										d.CtlTimer = make([]*time.Timer, 0)
+									}
+								}
 								delete(d.Pub.Channels, connId)
 								d.RestoreRequest()
 							}
@@ -367,7 +373,14 @@ func (d *Driver) RestoreRequest() {
 		}
 	}
 
-	d.BuildTopology(d.Topo)
+	timer := time.NewTimer(2 * time.Second)
+	d.CtlTimer = append(d.CtlTimer, timer)
+	go func() {
+		<-timer.C
+		d.BuildTopology(d.Topo)
+		d.CtlTimer = make([]*time.Timer, 0)
+	}()
+
 }
 
 // Timer to request suspend on spout instances
