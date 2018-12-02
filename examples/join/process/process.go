@@ -68,7 +68,7 @@ func GenderSpout(tuple []interface{}, result *[]interface{}, variables *[]interf
 		counterMap["counter"] = counterMap["counter"].(float64) + 1
 	}
 
-	time.Sleep(100 * time.Millisecond)
+	time.Sleep(1 * time.Millisecond)
 
 	// Return value
 	if (len(*result) > 0) {
@@ -96,7 +96,7 @@ func AgeSpout(tuple []interface{}, result *[]interface{}, variables *[]interface
 		counterMap["counter"] = counterMap["counter"].(float64) + 1
 	}
 
-	time.Sleep(100 * time.Millisecond)
+	time.Sleep(1 * time.Millisecond)
 
 	// Return value
 	if (len(*result) > 0) {
