@@ -181,7 +181,34 @@ func (d *Driver) BuildTopology(topo *topology.Topology) {
 	log.Println("Supervisors", addrs, keys)
 
 	countMap := make(map[string]int)
-	spoutsSuccBoltsConnIdMap := make(map[string]map[string]map[string]int)
+
+	//spoutsSuccBoltsConnIdMap := make(map[string]map[string]map[string]int)
+	// generate bolts connection ID to count num mapping
+	/*for _, k := range keys {*/
+	//tasks := addrs[k]
+	//targetId := d.SupervisorIdMap[uint32(k)]
+	//for _, task := range tasks {
+	//bolt, ok := task.(*bolt.BoltInst)
+	//if !ok {
+	//continue
+	//}
+	//if countMap[bolt.Name] == 0 {
+	//countMap[bolt.Name] = 1
+	//}
+	//for _, spoutName := range bolt.PrevTaskNames {
+	//_, ok = d.SpoutMap[spoutName]
+	//if ok {
+	//if spoutsSuccBoltsConnIdMap[spoutName] == nil {
+	//spoutsSuccBoltsConnIdMap[spoutName] = make(map[string]map[string]int)
+	//spoutsSuccBoltsConnIdMap[spoutName][bolt.Name] = make(map[string]int)
+
+	//}
+	//spoutsSuccBoltsConnIdMap[spoutName][bolt.Name][targetId] = countMap[bolt.Name]
+	//}
+	//}
+	//countMap[bolt.Name]++
+	//}
+	/*}*/
 
 	if d.SnapshotVersion > 0 {
 		for _, k := range keys {
@@ -208,16 +235,6 @@ func (d *Driver) BuildTopology(topo *topology.Topology) {
 						countMap[bolt.Name] = 1
 					}
 
-					for _, spoutName := range bolt.PrevTaskNames {
-						_, ok = d.SpoutMap[spoutName]
-						if ok {
-							if spoutsSuccBoltsConnIdMap[spoutName] == nil {
-								spoutsSuccBoltsConnIdMap[spoutName] = make(map[string]map[string]int)
-								spoutsSuccBoltsConnIdMap[spoutName][bolt.Name] = make(map[string]int)
-							}
-							spoutsSuccBoltsConnIdMap[spoutName][bolt.Name][targetId] = countMap[bolt.Name]
-						}
-					}
 					stateFileName := bolt.Name + "_" + fmt.Sprintf("%d_%d", countMap[bolt.Name], d.SnapshotVersion-1)
 					msg := utils.FilePull{stateFileName}
 					b, _ := utils.Marshal(utils.FILE_PULL, msg)
@@ -246,14 +263,13 @@ func (d *Driver) BuildTopology(topo *topology.Topology) {
 					countMap[spout.Name] = 1
 				}
 				msg := utils.SpoutTaskMessage{
-					Name:             spout.Name + "_" + fmt.Sprintf("%d", countMap[spout.Name]),
-					GroupingHint:     spout.GroupingHint,
-					FieldIndex:       spout.FieldIndex,
-					PluginFile:       spout.PluginFile,
-					PluginSymbol:     spout.PluginSymbol,
-					Port:             fmt.Sprintf("%d", utils.CONTRACTOR_BASE_PORT+offset),
-					SnapshotVersion:  d.SnapshotVersion - 1,
-					SuccBoltsConnIds: spoutsSuccBoltsConnIdMap[spout.Name],
+					Name:            spout.Name + "_" + fmt.Sprintf("%d", countMap[spout.Name]),
+					GroupingHint:    spout.GroupingHint,
+					FieldIndex:      spout.FieldIndex,
+					PluginFile:      spout.PluginFile,
+					PluginSymbol:    spout.PluginSymbol,
+					Port:            fmt.Sprintf("%d", utils.CONTRACTOR_BASE_PORT+offset),
+					SnapshotVersion: d.SnapshotVersion - 1,
 				}
 				fmt.Println(msg)
 				b, _ := utils.Marshal(utils.SPOUT_TASK, msg)
