@@ -131,8 +131,18 @@ func (bw *BoltWorker) Start() {
 		subscriber := messages.NewSubscriber(subAddr)
 		bw.subscribers = append(bw.subscribers, subscriber)
 		go subscriber.ReadMessage()
+		go subscriber.RequestMessage()
 	}
 	time.Sleep(1 * time.Second) // Wait for all subscriber established
+
+	// Tell the previous hop who am I
+	for _, subscriber := range bw.subscribers {
+		bin, _ := json.Marshal(bw.Name)
+		subscriber.Request <- messages.Message{
+			Payload: bin,
+		}
+	}
+	// End tell
 
 	bw.buildSucIndexMap()
 
