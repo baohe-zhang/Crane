@@ -364,7 +364,7 @@ func (d *Driver) RestoreRequest() {
 	d.SuspendResponseCount = 0
 	d.SnapshotResponseCount = 0
 
-	timer := time.NewTimer(4 * time.Second)
+	timer := time.NewTimer(2 * time.Second)
 	d.CtlTimer = append(d.CtlTimer, timer)
 	go func() {
 		<-timer.C
@@ -378,7 +378,7 @@ func (d *Driver) RestoreRequest() {
 				TargetConnId: connId,
 			}
 		}
-		time.Sleep(1500 * time.Millisecond)
+		time.Sleep(800 * time.Millisecond)
 		d.BuildTopology(d.Topo)
 	}()
 
