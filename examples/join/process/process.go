@@ -5,8 +5,9 @@ import (
 	"time"
 	"errors"
 	"log"
-	// "os"
-	// "bufio"
+	"os"
+	"io/ioutil"
+	"encoding/json"
 	"strconv"
 )
 
@@ -59,7 +60,7 @@ func GenderSpout(tuple []interface{}, result *[]interface{}, variables *[]interf
 	counterMap = (*variables)[0].(map[string]interface{})
 
 	// Logic
-	if counterMap["counter"].(float64) < 800 {
+	if counterMap["counter"].(float64) < 10 {
 		if int(counterMap["counter"].(float64)) % 2 == 0 {
 			*result = []interface{}{strconv.Itoa(int(counterMap["counter"].(float64))), "male"}
 		} else {
@@ -68,7 +69,7 @@ func GenderSpout(tuple []interface{}, result *[]interface{}, variables *[]interf
 		counterMap["counter"] = counterMap["counter"].(float64) + 1
 	}
 
-	time.Sleep(1 * time.Millisecond)
+	time.Sleep(10 * time.Millisecond)
 
 	// Return value
 	if (len(*result) > 0) {
@@ -83,20 +84,44 @@ func GenderSpout(tuple []interface{}, result *[]interface{}, variables *[]interf
 func AgeSpout(tuple []interface{}, result *[]interface{}, variables *[]interface{}) error {
 	// Variables
 	var counterMap map[string]interface{}
+	var idArray interface{}
+	var ageArray interface{}
+
 	if (len(*variables) == 0) {
 		counterMap = make(map[string]interface{})
 		*variables = append(*variables, counterMap)
 		counterMap["counter"] = float64(0)
+
+		file, _ := os.Open("data.json")
+		defer file.Close()
+
+		b, _ := ioutil.ReadAll(file)
+		var object interface{}
+		json.Unmarshal(b, &object)
+		objectMap := object.(map[string]interface{})
+		idArray = objectMap["id"].([]interface{})
+		ageArray = objectMap["age"].([]interface{})
+
+		*variables = append(*variables, idArray)
+		*variables = append(*variables, ageArray)
 	}
 	counterMap = (*variables)[0].(map[string]interface{})
+	idArray = (*variables)[1]
+	ageArray = (*variables)[2]
 
 	// Logic
-	if counterMap["counter"].(float64) < 800 {
-		*result = []interface{}{strconv.Itoa(int(counterMap["counter"].(float64))), strconv.Itoa(int(counterMap["counter"].(float64)) + 20)}
+	if counterMap["counter"].(float64) < 10 {
+		*result = []interface{}{idArray.([]interface{})[int(counterMap["counter"].(float64))], ageArray.([]interface{})[int(counterMap["counter"].(float64))]}
 		counterMap["counter"] = counterMap["counter"].(float64) + 1
 	}
 
-	time.Sleep(1 * time.Millisecond)
+	// // Logic
+	// if counterMap["counter"].(float64) < 800 {
+	// 	*result = []interface{}{strconv.Itoa(int(counterMap["counter"].(float64))), strconv.Itoa(int(counterMap["counter"].(float64)) + 20)}
+	// 	counterMap["counter"] = counterMap["counter"].(float64) + 1
+	// }
+
+	time.Sleep(10 * time.Millisecond)
 
 	// Return value
 	if (len(*result) > 0) {

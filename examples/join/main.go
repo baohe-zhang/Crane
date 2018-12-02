@@ -28,5 +28,6 @@ func main() {
 	tm.AddBolt(bm)
 
 	tm.SubmitFile("./process.so", "process.so")
+	tm.SubmitFile("./data.json", "data.json")
 	tm.Submit(":5050")
 }
