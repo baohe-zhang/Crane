@@ -141,6 +141,7 @@ func (bw *BoltWorker) Start() {
 		subscriber.Request <- messages.Message{
 			Payload: bin,
 		}
+		fmt.Println("hi")
 	}
 	// End tell
 
