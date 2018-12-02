@@ -111,12 +111,9 @@ func (s *Supervisor) StartDaemon() {
 			case utils.RESTORE_REQUEST:
 				s.ControlC <- "Close"
 				log.Printf("Receive Restore Request")
-				time.Sleep(100 * time.Millisecond)
-				s.SendKillRequestToWorkers()
 				// Clear supervisor's worker map
 				s.BoltWorkers = make([]*boltworker.BoltWorker, 0)
 				s.SpoutWorkers = make([]*spoutworker.SpoutWorker, 0)
-
 			}
 		default:
 			time.Sleep(10 * time.Millisecond)
@@ -159,6 +156,7 @@ func (s *Supervisor) ListenToWorkers() {
 		// Channel to close this goroutine
 		case signal := <-s.ControlC:
 			log.Printf("Receive Signal %s, Listen To Workers Return\n", signal)
+			s.SendKillRequestToWorkers()
 			return
 		default:
 		}
