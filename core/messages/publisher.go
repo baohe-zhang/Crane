@@ -49,7 +49,7 @@ func (pub *Publisher) PublishMessage(msgChan chan Message) {
 	for {
 		message := <-msgChan
 
-		//log.Printf("Going to send message on socket %s", message.TargetConnId)
+		log.Printf("Going to send message on socket %s", message.TargetConnId)
 
 		// send message to targetConn
 		targetConn := pub.Pool.Get(message.TargetConnId)
@@ -120,7 +120,7 @@ func (pub *Publisher) WaitMessage(msgChan chan Message, connId string) {
 			pub.RWLock.Unlock()
 
 			log.Printf("Can't read line from socket: %s. Connections in pool: %d\n", err, pub.Pool.Size())
-			break
+			return
 		} else {
 			// check request before pushing into channel
 			if len(request) == 0 {
