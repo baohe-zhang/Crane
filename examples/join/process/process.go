@@ -8,7 +8,7 @@ import (
 	"os"
 	"io/ioutil"
 	"encoding/json"
-	// "strconv"
+	"strconv"
 )
 
 
@@ -19,6 +19,9 @@ func GenderAgeJoinBolt(tuple []interface{}, result *[]interface{}, variables *[]
 	// Initialize variables
 	if (len(*variables) == 0) {
 		idMap = make(map[string]interface{})
+		for id_ := 1; id_ <= 5000; id_++ {
+			idMap[strconv.Itoa(id_)] = make([]interface{}, 2)
+		}
 		*variables = append(*variables, idMap)
 	}
 	// Get variables
@@ -26,10 +29,10 @@ func GenderAgeJoinBolt(tuple []interface{}, result *[]interface{}, variables *[]
 
 	// Process logic
 	id := tuple[0].(string)
-	_, ok := idMap[id]
-	if !ok {
-		idMap[id] = make([]interface{}, 2) // Create an interface array to store sex and age
-	}
+	// _, ok := idMap[id]
+	// if !ok {
+	// 	idMap[id] = make([]interface{}, 2) // Create an interface array to store sex and age
+	// }
 	item := tuple[1].(string)
 	if (item == "male" || item == "female") {
 		idMap[id].([]interface{})[0] = item
@@ -78,7 +81,7 @@ func GenderSpout(tuple []interface{}, result *[]interface{}, variables *[]interf
 	genderArray = (*variables)[2]
 
 	// Logic
-	if counterMap["counter"].(float64) < 10000 {
+	if counterMap["counter"].(float64) < 5000 {
 		*result = []interface{}{idArray.([]interface{})[int(counterMap["counter"].(float64))], genderArray.([]interface{})[int(counterMap["counter"].(float64))]}
 		counterMap["counter"] = counterMap["counter"].(float64) + 1
 	}
@@ -134,7 +137,7 @@ func AgeSpout(tuple []interface{}, result *[]interface{}, variables *[]interface
 	ageArray = (*variables)[2]
 
 	// Logic
-	if counterMap["counter"].(float64) < 10000 {
+	if counterMap["counter"].(float64) < 5000 {
 		*result = []interface{}{idArray.([]interface{})[int(counterMap["counter"].(float64))], ageArray.([]interface{})[int(counterMap["counter"].(float64))]}
 		counterMap["counter"] = counterMap["counter"].(float64) + 1
 	}
