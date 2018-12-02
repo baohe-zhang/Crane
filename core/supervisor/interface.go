@@ -155,13 +155,16 @@ func (s *Supervisor) ListenToWorkers() {
 	log.Println("Start Listen To Workers")
 
 	for {
+		select {
+		// Channel to close this goroutine
+		case signal := <-s.ControlC:
+			log.Printf("Receive Signal %s, Listen To Workers Return\n", signal)
+			return
+		default:
+		}
+
 		for _, bw := range s.BoltWorkers {
 			select {
-			// Channel to close this goroutine
-			case signal := <-s.ControlC:
-				log.Printf("Receive Signal %s, Listen To Workers Return\n", signal)
-				return
-
 			case message := <-bw.WorkerC:
 				switch string(message[0]) {
 				case "1":
@@ -174,17 +177,11 @@ func (s *Supervisor) ListenToWorkers() {
 					}
 				}
 			default:
-				time.Sleep(20 * time.Millisecond)
 			}
 		}
 
 		for _, sw := range s.SpoutWorkers {
 			select {
-			// Channel to close this goroutine
-			case signal := <-s.ControlC:
-				log.Printf("Receive Signal %s, Listen To Workers Return\n", signal)
-				return
-
 			case message := <-sw.WorkerC:
 				switch string(message[0]) {
 				case "1":
@@ -199,7 +196,6 @@ func (s *Supervisor) ListenToWorkers() {
 					s.SendSuspendResponseToDriver()
 				}
 			default:
-				time.Sleep(20 * time.Millisecond)
 			}
 		}
 

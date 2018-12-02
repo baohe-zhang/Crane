@@ -361,21 +361,20 @@ func (d *Driver) RestoreRequest() {
 	d.SuspendResponseCount = 0
 	d.SnapshotResponseCount = 0
 
-	// send out restore message to all other supervisors
-	// and let them shutdown current workers
-	b, _ := utils.Marshal(utils.RESTORE_REQUEST, utils.RESTORE_REQUEST)
-	for _, connId := range d.SupervisorIdMap {
-		d.Pub.PublishBoard <- messages.Message{
-			Payload:      b,
-			TargetConnId: connId,
-		}
-	}
-
 	timer := time.NewTimer(8 * time.Second)
 	d.CtlTimer = append(d.CtlTimer, timer)
 	go func() {
 		<-timer.C
 		log.Println("Timeout, build topology")
+		// send out restore message to all other supervisors
+		// and let them shutdown current workers
+		b, _ := utils.Marshal(utils.RESTORE_REQUEST, utils.RESTORE_REQUEST)
+		for _, connId := range d.SupervisorIdMap {
+			d.Pub.PublishBoard <- messages.Message{
+				Payload:      b,
+				TargetConnId: connId,
+			}
+		}
 		d.BuildTopology(d.Topo)
 	}()
 
