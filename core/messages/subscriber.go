@@ -48,7 +48,7 @@ func (sub *Subscriber) ReadMessage() {
 			// Connection Id as the address
 			connId := sub.Conn.RemoteAddr().String()
 			// push message from subscriber to message channel
-			//log.Printf("Received message on socket %s", connId)
+			log.Printf("Received message %s on socket %s", request, connId)
 			sub.PublishBoard <- Message{
 				Payload:      request,
 				SourceConnId: connId,

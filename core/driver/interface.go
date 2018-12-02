@@ -74,21 +74,21 @@ func (d *Driver) StartDaemon() {
 					content := &messages.ConnNotify{}
 					utils.Unmarshal(payload.Content, content)
 					if content.Type == messages.CONN_DELETE {
-						d.LockSIM.Lock()
+						for _, timer := range d.CtlTimer {
+							log.Println("Clean previous timer")
+							timer.Stop()
+						}
+						d.CtlTimer = make([]*time.Timer, 0)
+
+						d.LockSIM.RLock()
 						for index, connId_ := range d.SupervisorIdMap {
 							if connId_ == connId {
 								d.SupervisorIdMap = append(d.SupervisorIdMap[:index], d.SupervisorIdMap[index+1:]...)
-								if len(d.CtlTimer) >= 1 {
-									for _, timer := range d.CtlTimer {
-										timer.Stop()
-										d.CtlTimer = make([]*time.Timer, 0)
-									}
-								}
 								delete(d.Pub.Channels, connId)
-								d.RestoreRequest()
+								go d.RestoreRequest()
 							}
 						}
-						d.LockSIM.Unlock()
+						d.LockSIM.RUnlock()
 					}
 				// if it is the topology submitted from the client, which is
 				// the application written by the developer
@@ -254,8 +254,7 @@ func (d *Driver) BuildTopology(topo *topology.Topology) {
 		}
 	}
 
-	time.Sleep(5 * time.Second) // Sleep 10s to ensure all supervisors fetch the .so file
-
+	time.Sleep(5 * time.Second)
 	// Stage 2 : Send the task message information to supervisors
 	countMap = make(map[string]int)
 	for _, id := range keys {
@@ -338,7 +337,9 @@ func (d *Driver) BuildTopology(topo *topology.Topology) {
 
 	// Stage 3 : Send dispatch signal
 	for id, _ := range addrs {
+		d.LockSIM.RLock()
 		targetId := d.SupervisorIdMap[uint32(id)]
+		d.LockSIM.RUnlock()
 		b, _ := utils.Marshal(utils.TASK_ALL_DISPATCHED, "ok")
 		d.Pub.PublishBoard <- messages.Message{
 			Payload:      b,
@@ -363,22 +364,22 @@ func (d *Driver) RestoreRequest() {
 	d.SuspendResponseCount = 0
 	d.SnapshotResponseCount = 0
 
-	// send out restore message to all other supervisors
-	// and let them shutdown current workers
-	b, _ := utils.Marshal(utils.RESTORE_REQUEST, utils.RESTORE_REQUEST)
-	for _, connId := range d.SupervisorIdMap {
-		d.Pub.PublishBoard <- messages.Message{
-			Payload:      b,
-			TargetConnId: connId,
-		}
-	}
-
 	timer := time.NewTimer(2 * time.Second)
 	d.CtlTimer = append(d.CtlTimer, timer)
 	go func() {
 		<-timer.C
+		log.Println("Timeout, build topology")
+		// send out restore message to all other supervisors
+		// and let them shutdown current workers
+		b, _ := utils.Marshal(utils.RESTORE_REQUEST, utils.RESTORE_REQUEST)
+		for _, connId := range d.SupervisorIdMap {
+			d.Pub.PublishBoard <- messages.Message{
+				Payload:      b,
+				TargetConnId: connId,
+			}
+		}
+		time.Sleep(800 * time.Millisecond)
 		d.BuildTopology(d.Topo)
-		d.CtlTimer = make([]*time.Timer, 0)
 	}()
 
 }
@@ -387,7 +388,7 @@ func (d *Driver) RestoreRequest() {
 // before request backup snapshot for each node workers
 func (d *Driver) SuspendRequest() {
 	for {
-		time.Sleep(30 * time.Second)
+		time.Sleep(50 * time.Second)
 		hostConnIdMap := make(map[string]string)
 		for _, connId := range d.SupervisorIdMap {
 			host, _, _ := net.SplitHostPort(connId)

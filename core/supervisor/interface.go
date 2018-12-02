@@ -95,7 +95,7 @@ func (s *Supervisor) StartDaemon() {
 				for _, bw := range s.BoltWorkers {
 					go bw.Start()
 				}
-				time.Sleep(20 * time.Millisecond)
+				time.Sleep(100 * time.Millisecond)
 				go s.ListenToWorkers()
 
 			case utils.SUSPEND_REQUEST:
@@ -111,15 +111,12 @@ func (s *Supervisor) StartDaemon() {
 			case utils.RESTORE_REQUEST:
 				s.ControlC <- "Close"
 				log.Printf("Receive Restore Request")
-				time.Sleep(100 * time.Millisecond)
-				s.SendKillRequestToWorkers()
 				// Clear supervisor's worker map
 				s.BoltWorkers = make([]*boltworker.BoltWorker, 0)
 				s.SpoutWorkers = make([]*spoutworker.SpoutWorker, 0)
-
 			}
-		// default:
-		// 	time.Sleep(10 * time.Millisecond)
+			/*default:*/
+			/*time.Sleep(10 * time.Millisecond)*/
 		}
 	}
 
@@ -155,13 +152,18 @@ func (s *Supervisor) ListenToWorkers() {
 	log.Println("Start Listen To Workers")
 
 	for {
+		select {
+		// Channel to close this goroutine
+		case signal := <-s.ControlC:
+			s.SendKillRequestToWorkers()
+			time.Sleep(120 * time.Millisecond)
+			log.Printf("Receive Signal %s, Listen To Workers Return\n", signal)
+			return
+		default:
+		}
+
 		for _, bw := range s.BoltWorkers {
 			select {
-			// Channel to close this goroutine
-			case signal := <-s.ControlC:
-				log.Printf("Receive Signal %s, Listen To Workers Return\n", signal)
-				return
-
 			case message := <-bw.WorkerC:
 				switch string(message[0]) {
 				case "1":
@@ -174,17 +176,11 @@ func (s *Supervisor) ListenToWorkers() {
 					}
 				}
 			default:
-				time.Sleep(20 * time.Millisecond)
 			}
 		}
 
 		for _, sw := range s.SpoutWorkers {
 			select {
-			// Channel to close this goroutine
-			case signal := <-s.ControlC:
-				log.Printf("Receive Signal %s, Listen To Workers Return\n", signal)
-				return
-
 			case message := <-sw.WorkerC:
 				switch string(message[0]) {
 				case "1":
@@ -199,7 +195,6 @@ func (s *Supervisor) ListenToWorkers() {
 					s.SendSuspendResponseToDriver()
 				}
 			default:
-				time.Sleep(20 * time.Millisecond)
 			}
 		}
 
