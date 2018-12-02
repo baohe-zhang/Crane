@@ -74,7 +74,7 @@ func (d *Driver) StartDaemon() {
 					content := &messages.ConnNotify{}
 					utils.Unmarshal(payload.Content, content)
 					if content.Type == messages.CONN_DELETE {
-						d.LockSIM.Lock()
+						d.LockSIM.RLock()
 						for index, connId_ := range d.SupervisorIdMap {
 							if connId_ == connId {
 								d.SupervisorIdMap = append(d.SupervisorIdMap[:index], d.SupervisorIdMap[index+1:]...)
@@ -83,13 +83,13 @@ func (d *Driver) StartDaemon() {
 										log.Println("Clean previous timer")
 										timer.Stop()
 									}
-									d.CtlTimer = make([]*time.Timer, 0)
+									d.CtlTimer = d.CtlTimer[1:]
 								}
 								delete(d.Pub.Channels, connId)
 								d.RestoreRequest()
 							}
 						}
-						d.LockSIM.Unlock()
+						d.LockSIM.RUnlock()
 					}
 				// if it is the topology submitted from the client, which is
 				// the application written by the developer
