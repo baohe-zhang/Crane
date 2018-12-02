@@ -175,7 +175,9 @@ func (bw *BoltWorker) receiveTuple() {
 				}
 				var tuple []interface{}
 				json.Unmarshal(msg.Payload, &tuple)
-				bw.tuples <- tuple
+				if len(tuple) > 0 {
+					bw.tuples <- tuple
+				}
 			}
 		}
 	}
