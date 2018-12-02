@@ -28,7 +28,8 @@ type SpoutWorker struct {
 	publisher   *messages.Publisher
 	sucGrouping string
 	sucField    int
-	sucIndexMap map[int]string
+	sucIndexMap map[string]map[int]string
+	boltIdIndexMap map[string]map[string]int
 	rwmutex     sync.RWMutex
 	wg          sync.WaitGroup
 	SupervisorC chan string
@@ -39,7 +40,8 @@ type SpoutWorker struct {
 }
 
 func NewSpoutWorker(name string, pluginFilename string, pluginSymbol string, port string,
-	sucGrouping string, sucField int, supervisorC chan string, workerC chan string, version int) *SpoutWorker {
+	sucGrouping string, sucField int, supervisorC chan string, workerC chan string, version int, 
+	boltIdIndexMap map[string]map[string]int) *SpoutWorker {
 
 	procFunc := utils.LookupProcFunc(pluginFilename, pluginSymbol)
 
@@ -50,7 +52,7 @@ func NewSpoutWorker(name string, pluginFilename string, pluginSymbol string, por
 	var publisher *messages.Publisher
 
 	// A map to record the index of successor
-	sucIndexMap := make(map[int]string)
+	sucIndexMap := make(map[string]map[int]string)
 
 	sw := &SpoutWorker{
 		Name:        name,
@@ -62,6 +64,7 @@ func NewSpoutWorker(name string, pluginFilename string, pluginSymbol string, por
 		sucGrouping: sucGrouping,
 		sucField:    sucField,
 		sucIndexMap: sucIndexMap,
+		boltIdIndexMap: boltIdIndexMap,
 		SupervisorC: supervisorC,
 		WorkerC:     workerC,
 		suspend:     false,
@@ -90,7 +93,7 @@ func (sw *SpoutWorker) Start() {
 	sw.publisher = messages.NewPublisher(":" + sw.port)
 	go sw.publisher.AcceptConns()
 	go sw.publisher.PublishMessage(sw.publisher.PublishBoard)
-	time.Sleep(2 * time.Second) // Wait for all subscribers to join
+	time.Sleep(3 * time.Second) // Wait for all subscribers to join
 
 	sw.buildSucIndexMap()
 
@@ -133,28 +136,30 @@ func (sw *SpoutWorker) outputTuple() {
 		count := 0
 		for tuple := range sw.tuples {
 			bin, _ := json.Marshal(tuple)
-			sucid := count % len(sw.sucIndexMap)
-			sw.rwmutex.RLock()
-			sucConnId := sw.sucIndexMap[sucid]
-			sw.rwmutex.RUnlock()
-			sw.publisher.PublishBoard <- messages.Message{
-				Payload:      bin,
-				TargetConnId: sucConnId,
+			for _, v := range sw.sucIndexMap {
+				sucid := count % len(v)
+				sucConnId := v[sucid]
+				sw.publisher.PublishBoard <- messages.Message{
+					Payload:      bin,
+					TargetConnId: sucConnId,
+				}
 			}
 			count++
 		}
+
 	case utils.GROUPING_BY_FIELD:
 		for tuple := range sw.tuples {
 			bin, _ := json.Marshal(tuple)
-			sucid := utils.Hash(tuple[sw.sucField]) % len(sw.sucIndexMap)
-			sw.rwmutex.RLock()
-			sucConnId := sw.sucIndexMap[sucid]
-			sw.rwmutex.RUnlock()
-			sw.publisher.PublishBoard <- messages.Message{
-				Payload:      bin,
-				TargetConnId: sucConnId,
+			for _, v := range sw.sucIndexMap {
+				sucid := utils.Hash(tuple[sw.sucField]) % len(v)
+				sucConnId := v[sucid]
+				sw.publisher.PublishBoard <- messages.Message{
+					Payload:      bin,
+					TargetConnId: sucConnId,
+				}
 			}
 		}
+
 	case utils.GROUPING_BY_ALL:
 		for tuple := range sw.tuples {
 			bin, _ := json.Marshal(tuple)
@@ -165,14 +170,21 @@ func (sw *SpoutWorker) outputTuple() {
 				}
 			})
 		}
-	default:
 	}
 }
 
 func (sw *SpoutWorker) buildSucIndexMap() {
+	// 
 	sw.publisher.Pool.Range(func(id string, conn net.Conn) {
 		sw.rwmutex.Lock()
-		sw.sucIndexMap[len(sw.sucIndexMap)] = id
+		for k, v := range sw.boltIdIndexMap {
+			index, ok := v[id]
+			if ok {
+				sw.sucIndexMap[k][index] = id
+			} else {
+				continue
+			}
+		}
 		sw.rwmutex.Unlock()
 	})
 }
