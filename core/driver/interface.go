@@ -85,7 +85,7 @@ func (d *Driver) StartDaemon() {
 							if connId_ == connId {
 								d.SupervisorIdMap = append(d.SupervisorIdMap[:index], d.SupervisorIdMap[index+1:]...)
 								delete(d.Pub.Channels, connId)
-								d.RestoreRequest()
+								go d.RestoreRequest()
 							}
 						}
 						d.LockSIM.RUnlock()
@@ -374,10 +374,9 @@ func (d *Driver) RestoreRequest() {
 	timer := time.NewTimer(8 * time.Second)
 	d.CtlTimer = append(d.CtlTimer, timer)
 	go func() {
-		log.Println("Timeout, build topology")
 		<-timer.C
+		log.Println("Timeout, build topology")
 		d.BuildTopology(d.Topo)
-		d.CtlTimer = make([]*time.Timer, 0)
 	}()
 
 }
