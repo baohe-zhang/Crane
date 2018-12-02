@@ -84,7 +84,7 @@ func (s *Supervisor) StartDaemon() {
 				supervisorC := make(chan string)
 				workerC := make(chan string)
 				sw := spoutworker.NewSpoutWorker(task.Name, "./"+task.PluginFile, task.PluginSymbol, task.Port,
-					task.GroupingHint, task.FieldIndex, supervisorC, workerC, task.SnapshotVersion, task.SuccBoltsConnIds)
+					task.GroupingHint, task.FieldIndex, supervisorC, workerC, task.SnapshotVersion)
 				s.SpoutWorkers = append(s.SpoutWorkers, sw)
 
 			case utils.TASK_ALL_DISPATCHED:

@@ -29,7 +29,6 @@ type SpoutWorker struct {
 	sucGrouping string
 	sucField    int
 	sucIndexMap map[string]map[int]string
-	boltIdIndexMap map[string]map[string]int
 	rwmutex     sync.RWMutex
 	wg          sync.WaitGroup
 	SupervisorC chan string
@@ -40,8 +39,7 @@ type SpoutWorker struct {
 }
 
 func NewSpoutWorker(name string, pluginFilename string, pluginSymbol string, port string,
-	sucGrouping string, sucField int, supervisorC chan string, workerC chan string, version int, 
-	boltIdIndexMap map[string]map[string]int) *SpoutWorker {
+	sucGrouping string, sucField int, supervisorC chan string, workerC chan string, version int) *SpoutWorker {
 
 	procFunc := utils.LookupProcFunc(pluginFilename, pluginSymbol)
 
@@ -64,7 +62,6 @@ func NewSpoutWorker(name string, pluginFilename string, pluginSymbol string, por
 		sucGrouping: sucGrouping,
 		sucField:    sucField,
 		sucIndexMap: sucIndexMap,
-		boltIdIndexMap: boltIdIndexMap,
 		SupervisorC: supervisorC,
 		WorkerC:     workerC,
 		suspend:     false,
@@ -93,9 +90,12 @@ func (sw *SpoutWorker) Start() {
 	sw.publisher = messages.NewPublisher(":" + sw.port)
 	go sw.publisher.AcceptConns()
 	go sw.publisher.PublishMessage(sw.publisher.PublishBoard)
-	time.Sleep(3 * time.Second) // Wait for all subscribers to join
+	time.Sleep(2 * time.Second) // Wait for all subscribers to join
 
-	sw.buildSucIndexMap()
+	// Listen to subscriber, they will tell who they are
+	go sw.listenToSubscribers()
+	time.Sleep(2 * time.Second) // Wait for spout to establish suc index map
+	fmt.Printf("Map: %v\n", sw.sucIndexMap)
 
 	go sw.receiveTuple()
 	go sw.outputTuple()
@@ -104,6 +104,35 @@ func (sw *SpoutWorker) Start() {
 	sw.wg.Wait()
 	sw.publisher.Close()
 	log.Printf("Spout Worker %s Terminates\n", sw.Name)
+}
+
+func (sw *SpoutWorker) listenToSubscribers() {
+	defer func() {
+		if r := recover(); r != nil {
+			log.Println("listenToSubscribers panic and recovered", r)
+		}
+	}()
+	for {
+		for connId, channel := range sw.publisher.Channels {
+			sw.publisher.RWLock.RLock()
+			select {
+			case message := <- channel:
+				log.Println(message)
+				var workerName string
+				json.Unmarshal(message.Payload, &workerName)
+				words := strings.Split(workerName, "_")
+				boltType := words[0]
+				boltIndex := words[1]
+				if (sw.sucIndexMap[boltType] == nil) {
+					sw.sucIndexMap[boltType] = make(map[int]string)
+				}
+				index, _ := strconv.Atoi(boltIndex)
+				sw.sucIndexMap[boltType][index] = connId
+			default:
+			}
+			sw.publisher.RWLock.RUnlock()
+		}
+	}
 }
 
 // Receive tuple from input stream
@@ -138,7 +167,7 @@ func (sw *SpoutWorker) outputTuple() {
 			bin, _ := json.Marshal(tuple)
 			for _, v := range sw.sucIndexMap {
 				sucid := count % len(v)
-				sucConnId := v[sucid]
+				sucConnId := v[sucid+1]
 				sw.publisher.PublishBoard <- messages.Message{
 					Payload:      bin,
 					TargetConnId: sucConnId,
@@ -152,7 +181,7 @@ func (sw *SpoutWorker) outputTuple() {
 			bin, _ := json.Marshal(tuple)
 			for _, v := range sw.sucIndexMap {
 				sucid := utils.Hash(tuple[sw.sucField]) % len(v)
-				sucConnId := v[sucid]
+				sucConnId := v[sucid+1]
 				sw.publisher.PublishBoard <- messages.Message{
 					Payload:      bin,
 					TargetConnId: sucConnId,
@@ -171,27 +200,6 @@ func (sw *SpoutWorker) outputTuple() {
 			})
 		}
 	}
-}
-
-func (sw *SpoutWorker) buildSucIndexMap() {
-	//
-	log.Printf("%s Start Building Successors Index Map\n", sw.Name)
-	log.Printf("receive Map: %v\n", sw.boltIdIndexMap)
-	sw.publisher.Pool.Range(func(id string, conn net.Conn) {
-		sw.rwmutex.Lock()
-		for k, v := range sw.boltIdIndexMap {
-			fmt.Printf("k: %v, v: %v, id: %v\n", k, v, id)
-			index, ok := v[id]
-			if ok {
-				fmt.Printf("ok\n")
-				sw.sucIndexMap[k][index] = id
-			} else {
-				continue
-			}
-		}
-		sw.rwmutex.Unlock()
-	})
-	log.Printf("Successors Index Map: %v\n", sw.sucIndexMap)
 }
 
 // Serialize and store variables into local file
