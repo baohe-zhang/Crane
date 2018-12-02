@@ -107,6 +107,11 @@ func (sw *SpoutWorker) Start() {
 }
 
 func (sw *SpoutWorker) listenToSubscribers() {
+	defer func() {
+		if r := recover(); r != nil {
+			log.Println("listenToSubscribers panic and recovered", r)
+		}
+	}()
 	for {
 		for connId, channel := range sw.publisher.Channels {
 			sw.publisher.RWLock.RLock()
