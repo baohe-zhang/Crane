@@ -78,7 +78,7 @@ func (d *Driver) StartDaemon() {
 							log.Println("Clean previous timer")
 							timer.Stop()
 						}
-						d.CtlTimer = d.CtlTimer[1:]
+						d.CtlTimer = make([]*time.Timer, 0)
 
 						d.LockSIM.RLock()
 						for index, connId_ := range d.SupervisorIdMap {
