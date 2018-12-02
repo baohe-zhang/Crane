@@ -122,6 +122,7 @@ func (sw *SpoutWorker) listenToSubscribers() {
 				}
 				index, _ := strconv.Atoi(boltIndex)
 				sw.sucIndexMap[boltType][index] = connId
+			default:
 			}
 		}
 	}
