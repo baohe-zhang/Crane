@@ -19,7 +19,7 @@ func GenderAgeJoinBolt(tuple []interface{}, result *[]interface{}, variables *[]
 	// Initialize variables
 	if (len(*variables) == 0) {
 		idMap = make(map[string]interface{})
-		for id_ := 1; id_ <= 5000; id_++ {
+		for id_ := 0; id_ < 5000; id_++ {
 			idMap[strconv.Itoa(id_)] = make([]interface{}, 2)
 		}
 		*variables = append(*variables, idMap)
