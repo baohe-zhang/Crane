@@ -8,7 +8,7 @@ import (
 	"os"
 	"io/ioutil"
 	"encoding/json"
-	"strconv"
+	// "strconv"
 )
 
 
@@ -52,22 +52,46 @@ func GenderAgeJoinBolt(tuple []interface{}, result *[]interface{}, variables *[]
 func GenderSpout(tuple []interface{}, result *[]interface{}, variables *[]interface{}) error {
 	// Variables
 	var counterMap map[string]interface{}
+	var idArray interface{}
+	var genderArray interface{}
+
 	if (len(*variables) == 0) {
 		counterMap = make(map[string]interface{})
 		*variables = append(*variables, counterMap)
 		counterMap["counter"] = float64(0)
+
+		file, _ := os.Open("data.json")
+		defer file.Close()
+
+		b, _ := ioutil.ReadAll(file)
+		var object interface{}
+		json.Unmarshal(b, &object)
+		objectMap := object.(map[string]interface{})
+		idArray = objectMap["id"].([]interface{})
+		genderArray = objectMap["gender"].([]interface{})
+
+		*variables = append(*variables, idArray)
+		*variables = append(*variables, genderArray)
 	}
 	counterMap = (*variables)[0].(map[string]interface{})
+	idArray = (*variables)[1]
+	genderArray = (*variables)[2]
 
 	// Logic
-	if counterMap["counter"].(float64) < 10 {
-		if int(counterMap["counter"].(float64)) % 2 == 0 {
-			*result = []interface{}{strconv.Itoa(int(counterMap["counter"].(float64))), "male"}
-		} else {
-			*result = []interface{}{strconv.Itoa(int(counterMap["counter"].(float64))), "female"}
-		}
+	if counterMap["counter"].(float64) < 10000 {
+		*result = []interface{}{idArray.([]interface{})[int(counterMap["counter"].(float64))], genderArray.([]interface{})[int(counterMap["counter"].(float64))]}
 		counterMap["counter"] = counterMap["counter"].(float64) + 1
 	}
+
+	// // Logic
+	// if counterMap["counter"].(float64) < 10 {
+	// 	if int(counterMap["counter"].(float64)) % 2 == 0 {
+	// 		*result = []interface{}{strconv.Itoa(int(counterMap["counter"].(float64))), "male"}
+	// 	} else {
+	// 		*result = []interface{}{strconv.Itoa(int(counterMap["counter"].(float64))), "female"}
+	// 	}
+	// 	counterMap["counter"] = counterMap["counter"].(float64) + 1
+	// }
 
 	time.Sleep(10 * time.Millisecond)
 
@@ -110,7 +134,7 @@ func AgeSpout(tuple []interface{}, result *[]interface{}, variables *[]interface
 	ageArray = (*variables)[2]
 
 	// Logic
-	if counterMap["counter"].(float64) < 10 {
+	if counterMap["counter"].(float64) < 10000 {
 		*result = []interface{}{idArray.([]interface{})[int(counterMap["counter"].(float64))], ageArray.([]interface{})[int(counterMap["counter"].(float64))]}
 		counterMap["counter"] = counterMap["counter"].(float64) + 1
 	}
