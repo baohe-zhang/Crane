@@ -332,7 +332,7 @@ func (d *Driver) BuildTopology(topo *topology.Topology) {
 		}
 	}
 
-	time.Sleep(2 * time.Second)
+	time.Sleep(6 * time.Second)
 
 	// Stage 3 : Send dispatch signal
 	for id, _ := range addrs {
@@ -377,6 +377,7 @@ func (d *Driver) RestoreRequest() {
 				TargetConnId: connId,
 			}
 		}
+		time.Sleep(1500 * time.Millisecond)
 		d.BuildTopology(d.Topo)
 	}()
 
