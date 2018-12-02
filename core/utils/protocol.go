@@ -57,13 +57,14 @@ type BoltTaskMessage struct {
 }
 
 type SpoutTaskMessage struct {
-	Name            string
-	Port            string
-	GroupingHint    string
-	FieldIndex      int
-	PluginFile      string
-	PluginSymbol    string
-	SnapshotVersion int
+	Name             string
+	Port             string
+	GroupingHint     string
+	FieldIndex       int
+	PluginFile       string
+	PluginSymbol     string
+	SnapshotVersion  int
+	SuccBoltsConnIds map[string]map[string]int
 }
 
 func Marshal(contentType string, content interface{}) ([]byte, error) {
