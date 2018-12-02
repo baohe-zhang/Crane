@@ -50,21 +50,22 @@ func GenderAgeJoinBolt(tuple []interface{}, result *[]interface{}, variables *[]
 // Sample gender spout. emit (id, gender)
 func GenderSpout(tuple []interface{}, result *[]interface{}, variables *[]interface{}) error {
 	// Variables
-	var counter interface{}
+	var counterMap map[string]interface{}
 	if (len(*variables) == 0) {
-		counter = new(float64)
-		*variables = append(*variables, counter)
+		counterMap = make(map[string]interface{})
+		*variables = append(*variables, counterMap)
+		counterMap["counter"] = float64(0)
 	}
-	counter = (*variables)[0]
+	counterMap = (*variables)[0].(map[string]interface{})
 
 	// Logic
-	if (*counter.(*float64)) < 21 {
-		if int((*counter.(*float64))) % 2 == 0 {
-			*result = []interface{}{strconv.Itoa(int((*counter.(*float64)))), "male"}
+	if counterMap["counter"].(float64) < 800 {
+		if int(counterMap["counter"].(float64)) % 2 == 0 {
+			*result = []interface{}{strconv.Itoa(int(counterMap["counter"].(float64))), "male"}
 		} else {
-			*result = []interface{}{strconv.Itoa(int((*counter.(*float64)))), "female"}
+			*result = []interface{}{strconv.Itoa(int(counterMap["counter"].(float64))), "female"}
 		}
-		(*counter.(*float64)) = (*counter.(*float64)) + 1
+		counterMap["counter"] = counterMap["counter"].(float64) + 1
 	}
 
 	time.Sleep(100 * time.Millisecond)
@@ -81,17 +82,18 @@ func GenderSpout(tuple []interface{}, result *[]interface{}, variables *[]interf
 // Sample age spout. emit (id, age)
 func AgeSpout(tuple []interface{}, result *[]interface{}, variables *[]interface{}) error {
 	// Variables
-	var counter interface{}
+	var counterMap map[string]interface{}
 	if (len(*variables) == 0) {
-		counter = new(float64)
-		*variables = append(*variables, counter)
+		counterMap = make(map[string]interface{})
+		*variables = append(*variables, counterMap)
+		counterMap["counter"] = float64(0)
 	}
-	counter = (*variables)[0]
+	counterMap = (*variables)[0].(map[string]interface{})
 
 	// Logic
-	if (*counter.(*float64)) < 21 {
-		*result = []interface{}{strconv.Itoa(int((*counter.(*float64)))), strconv.Itoa(int((*counter.(*float64))) + 20)}
-		(*counter.(*float64)) = (*counter.(*float64)) + 1
+	if counterMap["counter"].(float64) < 800 {
+		*result = []interface{}{strconv.Itoa(int(counterMap["counter"].(float64))), strconv.Itoa(int(counterMap["counter"].(float64)) + 20)}
+		counterMap["counter"] = counterMap["counter"].(float64) + 1
 	}
 
 	time.Sleep(100 * time.Millisecond)
