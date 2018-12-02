@@ -48,6 +48,7 @@ func NextTuple(tuple []interface{}, result *[]interface{}, variables *[]interfac
 
 	// Logic
 	if counterMap["counter"].(float64) < 800 {
+		fmt.Printf("spout counter %v\n", counterMap["counter"])
 		*result = []interface{}{words[int(counterMap["counter"].(float64)) % len(words)]}
 		fmt.Printf("spout emit: (%v)\n", *result)
 		counterMap["counter"] = counterMap["counter"].(float64) + 1
