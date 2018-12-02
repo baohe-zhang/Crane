@@ -118,8 +118,8 @@ func (s *Supervisor) StartDaemon() {
 				s.SpoutWorkers = make([]*spoutworker.SpoutWorker, 0)
 
 			}
-		// default:
-		// 	time.Sleep(10 * time.Millisecond)
+		default:
+			time.Sleep(10 * time.Millisecond)
 		}
 	}
 
