@@ -248,8 +248,6 @@ func (d *Driver) BuildTopology(topo *topology.Topology) {
 		}
 	}
 
-	log.Println("Map", spoutsSuccBoltsConnIdMap)
-
 	time.Sleep(5 * time.Second) // Sleep 10s to ensure all supervisors fetch the .so file
 
 	// Stage 2 : Send the task message information to supervisors
@@ -265,14 +263,13 @@ func (d *Driver) BuildTopology(topo *topology.Topology) {
 					countMap[spout.Name] = 1
 				}
 				msg := utils.SpoutTaskMessage{
-					Name:             spout.Name + "_" + fmt.Sprintf("%d", countMap[spout.Name]),
-					GroupingHint:     spout.GroupingHint,
-					FieldIndex:       spout.FieldIndex,
-					PluginFile:       spout.PluginFile,
-					PluginSymbol:     spout.PluginSymbol,
-					Port:             fmt.Sprintf("%d", utils.CONTRACTOR_BASE_PORT+offset),
-					SnapshotVersion:  d.SnapshotVersion - 1,
-					SuccBoltsConnIds: spoutsSuccBoltsConnIdMap[spout.Name],
+					Name:            spout.Name + "_" + fmt.Sprintf("%d", countMap[spout.Name]),
+					GroupingHint:    spout.GroupingHint,
+					FieldIndex:      spout.FieldIndex,
+					PluginFile:      spout.PluginFile,
+					PluginSymbol:    spout.PluginSymbol,
+					Port:            fmt.Sprintf("%d", utils.CONTRACTOR_BASE_PORT+offset),
+					SnapshotVersion: d.SnapshotVersion - 1,
 				}
 				fmt.Println(msg)
 				b, _ := utils.Marshal(utils.SPOUT_TASK, msg)
