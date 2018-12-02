@@ -84,7 +84,7 @@ func (s *Supervisor) StartDaemon() {
 				supervisorC := make(chan string)
 				workerC := make(chan string)
 				sw := spoutworker.NewSpoutWorker(task.Name, "./"+task.PluginFile, task.PluginSymbol, task.Port,
-					task.GroupingHint, task.FieldIndex, supervisorC, workerC, task.SnapshotVersion)
+					task.GroupingHint, task.FieldIndex, supervisorC, workerC, task.SnapshotVersion, task.SuccBoltsConnIds)
 				s.SpoutWorkers = append(s.SpoutWorkers, sw)
 
 			case utils.TASK_ALL_DISPATCHED:
@@ -116,10 +116,6 @@ func (s *Supervisor) StartDaemon() {
 				// Clear supervisor's worker map
 				s.BoltWorkers = make([]*boltworker.BoltWorker, 0)
 				s.SpoutWorkers = make([]*spoutworker.SpoutWorker, 0)
-
-			case utils.TASK_ADDRESS_MAP:
-				// Send this map to spout, ask spout to establish successor index map
-
 
 			}
 		// default:
