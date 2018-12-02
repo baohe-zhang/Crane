@@ -42,7 +42,7 @@ func GenderAgeJoinBolt(tuple []interface{}, result *[]interface{}, variables *[]
 		}
 	}
 	if len(*result) > 0 {
-		log.Printf("Bolt Emit (%v)\n", *result)
+		log.Printf("Join Bolt Emit (%v)\n", *result)
 	}
 	return nil
 }
@@ -71,7 +71,7 @@ func GenderSpout(tuple []interface{}, result *[]interface{}, variables *[]interf
 
 	// Return value
 	if (len(*result) > 0) {
-		log.Printf("Spout Emit (%v)\n", *result)
+		log.Printf("Gender Spout Emit (%v)\n", *result)
 		return nil
 	} else {
 		return errors.New("next tuple is nil")
@@ -98,7 +98,7 @@ func AgeSpout(tuple []interface{}, result *[]interface{}, variables *[]interface
 
 	// Return value
 	if (len(*result) > 0) {
-		log.Printf("Spout Emit (%v)\n", *result)
+		log.Printf("Age Spout Emit (%v)\n", *result)
 		return nil
 	} else {
 		return errors.New("next tuple is nil")
