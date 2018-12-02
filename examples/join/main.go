@@ -13,14 +13,18 @@ func main() {
 
 	// Create a spout
 	sp := spout.NewSpoutInst("GenderSpout", "process.so", "GenderSpout", utils.GROUPING_BY_FIELD, 0)
+	sp_ := spout.NewSpoutInst("AgeSpout", "process.so", "AgeSpout", utils.GROUPING_BY_FIELD, 0)
 	sp.SetInstanceNum(1)
+	sp_.SetInstanceNum(1)
 	tm.AddSpout(sp)
+	tm.AddSpout(sp_)
 
 	// Create a bolt
 	// Params: name, pluginFile, pluginSymbol, groupingHint, fieldIndex
 	bm := bolt.NewBoltInst("GenderAgeJoinBolt", "process.so", "GenderAgeJoinBolt", utils.GROUPING_BY_ALL, 0)
 	bm.SetInstanceNum(2)
 	bm.AddPrevTaskName("GenderSpout")
+	bm.AddPrevTaskName("AgeSpout")
 	tm.AddBolt(bm)
 
 	tm.SubmitFile("./process.so", "process.so")

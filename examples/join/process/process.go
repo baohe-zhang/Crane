@@ -41,7 +41,9 @@ func GenderAgeJoinBolt(tuple []interface{}, result *[]interface{}, variables *[]
 			*result = []interface{}{id, idMap[id][0], idMap[id][1]}
 		}
 	}
-	log.Printf("Bolt Emit (%v)\n", *result)
+	if len(*result) > 0 {
+		log.Printf("Bolt Emit (%v)\n", *result)
+	}
 	return nil
 }
 
