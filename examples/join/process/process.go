@@ -14,14 +14,14 @@ import (
 // Sample join bolt. (id, gender) + (id, age) -> (id, gender, age)
 func GenderAgeJoinBolt(tuple []interface{}, result *[]interface{}, variables *[]interface{}) error {
 	// Define variables
-	var idMap map[string][]interface{}
+	var idMap map[string]interface{}
 	// Initialize variables
 	if (len(*variables) == 0) {
-		idMap = make(map[string][]interface{})
+		idMap = make(map[string]interface{})
 		*variables = append(*variables, idMap)
 	}
 	// Get variables
-	idMap = (*variables)[0].(map[string][]interface{})
+	idMap = (*variables)[0].(map[string]interface{})
 
 	// Process logic
 	id := tuple[0].(string)
@@ -31,14 +31,14 @@ func GenderAgeJoinBolt(tuple []interface{}, result *[]interface{}, variables *[]
 	}
 	item := tuple[1].(string)
 	if (item == "male" || item == "female") {
-		idMap[id][0] = item
-		if idMap[id][1] != nil {
-			*result = []interface{}{id, idMap[id][0], idMap[id][1]}
+		idMap[id].([]interface{})[0] = item
+		if idMap[id].([]interface{})[1] != nil {
+			*result = []interface{}{id, idMap[id].([]interface{})[0], idMap[id].([]interface{})[1]}
 		}
 	} else {
-		idMap[id][1] = item
-		if idMap[id][0] != nil {
-			*result = []interface{}{id, idMap[id][0], idMap[id][1]}
+		idMap[id].([]interface{})[1] = item
+		if idMap[id].([]interface{})[0] != nil {
+			*result = []interface{}{id, idMap[id].([]interface{})[0], idMap[id].([]interface{})[1]}
 		}
 	}
 	if len(*result) > 0 {
