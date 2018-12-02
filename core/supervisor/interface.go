@@ -109,8 +109,6 @@ func (s *Supervisor) StartDaemon() {
 				s.SendSerializeRequestToWorkers(strconv.Itoa(version))
 
 			case utils.RESTORE_REQUEST:
-				s.SendKillRequestToWorkers()
-				time.Sleep(120 * time.Millisecond)
 				s.ControlC <- "Close"
 				log.Printf("Receive Restore Request")
 				// Clear supervisor's worker map
@@ -157,6 +155,8 @@ func (s *Supervisor) ListenToWorkers() {
 		select {
 		// Channel to close this goroutine
 		case signal := <-s.ControlC:
+			s.SendKillRequestToWorkers()
+			time.Sleep(120 * time.Millisecond)
 			log.Printf("Receive Signal %s, Listen To Workers Return\n", signal)
 			return
 		default:

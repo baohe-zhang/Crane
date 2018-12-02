@@ -336,7 +336,9 @@ func (d *Driver) BuildTopology(topo *topology.Topology) {
 
 	// Stage 3 : Send dispatch signal
 	for id, _ := range addrs {
+		d.LockSIM.RLock()
 		targetId := d.SupervisorIdMap[uint32(id)]
+		d.LockSIM.RUnlock()
 		b, _ := utils.Marshal(utils.TASK_ALL_DISPATCHED, "ok")
 		d.Pub.PublishBoard <- messages.Message{
 			Payload:      b,
