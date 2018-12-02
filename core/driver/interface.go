@@ -183,6 +183,29 @@ func (d *Driver) BuildTopology(topo *topology.Topology) {
 	countMap := make(map[string]int)
 	spoutsSuccBoltsConnIdMap := make(map[string]map[string]map[string]int)
 
+	// generate bolts connection ID to count num mapping
+	for _, k := range keys {
+		tasks := addrs[k]
+		targetId := d.SupervisorIdMap[uint32(k)]
+		for _, task := range tasks {
+			bolt, ok := task.(*bolt.BoltInst)
+			if !ok {
+				continue
+			}
+			if countMap[bolt.Name] == 0 {
+				countMap[bolt.Name] = 1
+			}
+			for _, spoutName := range bolt.PrevTaskNames {
+				_, ok = d.SpoutMap[spoutName]
+				if ok {
+					spoutsSuccBoltsConnIdMap[spoutName][bolt.Name][targetId] = countMap[bolt.Name]
+				}
+			}
+			countMap[bolt.Name]++
+		}
+	}
+
+	countMap = make(map[string]int)
 	if d.SnapshotVersion > 0 {
 		for _, k := range keys {
 			tasks := addrs[k]
@@ -208,14 +231,6 @@ func (d *Driver) BuildTopology(topo *topology.Topology) {
 						countMap[bolt.Name] = 1
 					}
 
-					for _, spoutName := range bolt.PrevTaskNames {
-						_, ok = d.SpoutMap[spoutName]
-						if ok {
-							spoutsSuccBoltsConnIdMap[spoutName][bolt.Name][targetId] = countMap[bolt.Name]
-							log.Println("CountMap", countMap)
-							log.Println("MapValue", spoutsSuccBoltsConnIdMap[spoutName][bolt.Name][targetId])
-						}
-					}
 					stateFileName := bolt.Name + "_" + fmt.Sprintf("%d_%d", countMap[bolt.Name], d.SnapshotVersion-1)
 					msg := utils.FilePull{stateFileName}
 					b, _ := utils.Marshal(utils.FILE_PULL, msg)
