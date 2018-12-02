@@ -180,33 +180,53 @@ func (d *Driver) BuildTopology(topo *topology.Topology) {
 	sort.Ints(keys)
 	log.Println("Supervisors", addrs, keys)
 
-	count = 1
+	countMap := make(map[string]int)
+	spoutsSuccBoltsConnIdMap := make(map[string]map[string]map[string]int)
+
 	if d.SnapshotVersion > 0 {
 		for _, k := range keys {
 			tasks := addrs[k]
 			targetId := d.SupervisorIdMap[uint32(k)]
 			for _, task := range tasks {
-				time.Sleep(300 * time.Millisecond)
+				time.Sleep(400 * time.Millisecond)
 				spout, ok := task.(*spout.SpoutInst)
 				if ok {
-					stateFileName := spout.Name + "_" + fmt.Sprintf("%d_%d", count, d.SnapshotVersion-1)
+					if countMap[spout.Name] == 0 {
+						countMap[spout.Name] = 1
+					}
+					stateFileName := spout.Name + "_" + fmt.Sprintf("%d_%d", countMap[spout.Name], d.SnapshotVersion-1)
 					msg := utils.FilePull{stateFileName}
 					b, _ := utils.Marshal(utils.FILE_PULL, msg)
 					d.Pub.PublishBoard <- messages.Message{
 						Payload:      b,
 						TargetConnId: targetId,
 					}
+					countMap[spout.Name]++
 				} else {
 					bolt, _ := task.(*bolt.BoltInst)
-					stateFileName := bolt.Name + "_" + fmt.Sprintf("%d_%d", count, d.SnapshotVersion-1)
+					if countMap[bolt.Name] == 0 {
+						countMap[bolt.Name] = 1
+					}
+
+					for _, spoutName := range bolt.PrevTaskNames {
+						_, ok = d.SpoutMap[spoutName]
+						if ok {
+							if spoutsSuccBoltsConnIdMap[spoutName] == nil {
+								spoutsSuccBoltsConnIdMap[spoutName] = make(map[string]map[string]int)
+								spoutsSuccBoltsConnIdMap[spoutName][bolt.Name] = make(map[string]int)
+							}
+							spoutsSuccBoltsConnIdMap[spoutName][bolt.Name][targetId] = countMap[bolt.Name]
+						}
+					}
+					stateFileName := bolt.Name + "_" + fmt.Sprintf("%d_%d", countMap[bolt.Name], d.SnapshotVersion-1)
 					msg := utils.FilePull{stateFileName}
 					b, _ := utils.Marshal(utils.FILE_PULL, msg)
 					d.Pub.PublishBoard <- messages.Message{
 						Payload:      b,
 						TargetConnId: targetId,
 					}
+					countMap[bolt.Name]++
 				}
-				count++
 			}
 		}
 	}
@@ -214,7 +234,7 @@ func (d *Driver) BuildTopology(topo *topology.Topology) {
 	time.Sleep(5 * time.Second) // Sleep 10s to ensure all supervisors fetch the .so file
 
 	// Stage 2 : Send the task message information to supervisors
-	count = 1
+	countMap = make(map[string]int)
 	for _, id := range keys {
 		tasks := addrs[id]
 		targetId := d.SupervisorIdMap[uint32(id)]
@@ -222,14 +242,18 @@ func (d *Driver) BuildTopology(topo *topology.Topology) {
 			time.Sleep(20 * time.Millisecond)
 			spout, ok := task.(*spout.SpoutInst)
 			if ok {
+				if countMap[spout.Name] == 0 {
+					countMap[spout.Name] = 1
+				}
 				msg := utils.SpoutTaskMessage{
-					Name:            spout.Name + "_" + fmt.Sprintf("%d", count),
-					GroupingHint:    spout.GroupingHint,
-					FieldIndex:      spout.FieldIndex,
-					PluginFile:      spout.PluginFile,
-					PluginSymbol:    spout.PluginSymbol,
-					Port:            fmt.Sprintf("%d", utils.CONTRACTOR_BASE_PORT+offset),
-					SnapshotVersion: d.SnapshotVersion - 1,
+					Name:             spout.Name + "_" + fmt.Sprintf("%d", countMap[spout.Name]),
+					GroupingHint:     spout.GroupingHint,
+					FieldIndex:       spout.FieldIndex,
+					PluginFile:       spout.PluginFile,
+					PluginSymbol:     spout.PluginSymbol,
+					Port:             fmt.Sprintf("%d", utils.CONTRACTOR_BASE_PORT+offset),
+					SnapshotVersion:  d.SnapshotVersion - 1,
+					SuccBoltsConnIds: spoutsSuccBoltsConnIdMap[spout.Name],
 				}
 				fmt.Println(msg)
 				b, _ := utils.Marshal(utils.SPOUT_TASK, msg)
@@ -237,10 +261,14 @@ func (d *Driver) BuildTopology(topo *topology.Topology) {
 					Payload:      b,
 					TargetConnId: targetId,
 				}
+				countMap[spout.Name]++
 			} else {
 				bolt, ok := task.(*bolt.BoltInst)
+				if countMap[bolt.Name] == 0 {
+					countMap[bolt.Name] = 1
+				}
 				msg := utils.BoltTaskMessage{
-					Name:                 bolt.Name + "_" + fmt.Sprintf("%d", count),
+					Name:                 bolt.Name + "_" + fmt.Sprintf("%d", countMap[bolt.Name]),
 					SuccBoltGroupingHint: bolt.GroupingHint,
 					SuccBoltFieldIndex:   bolt.FieldIndex,
 					PluginFile:           bolt.PluginFile,
@@ -279,8 +307,8 @@ func (d *Driver) BuildTopology(topo *topology.Topology) {
 					Payload:      b,
 					TargetConnId: targetId,
 				}
+				countMap[bolt.Name]++
 			}
-			count++
 		}
 	}
 
