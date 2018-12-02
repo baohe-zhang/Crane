@@ -79,10 +79,11 @@ func (d *Driver) StartDaemon() {
 							if connId_ == connId {
 								d.SupervisorIdMap = append(d.SupervisorIdMap[:index], d.SupervisorIdMap[index+1:]...)
 								if len(d.CtlTimer) >= 1 {
+									log.Println("Clean previous timer")
 									for _, timer := range d.CtlTimer {
 										timer.Stop()
-										d.CtlTimer = make([]*time.Timer, 0)
 									}
+									d.CtlTimer = make([]*time.Timer, 0)
 								}
 								delete(d.Pub.Channels, connId)
 								d.RestoreRequest()
@@ -376,6 +377,7 @@ func (d *Driver) RestoreRequest() {
 	timer := time.NewTimer(4 * time.Second)
 	d.CtlTimer = append(d.CtlTimer, timer)
 	go func() {
+		log.Println("Timeout, build topology")
 		<-timer.C
 		d.BuildTopology(d.Topo)
 		d.CtlTimer = make([]*time.Timer, 0)
