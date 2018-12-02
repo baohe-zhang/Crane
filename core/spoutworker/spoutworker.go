@@ -180,7 +180,6 @@ func (sw *SpoutWorker) outputTuple() {
 		for tuple := range sw.tuples {
 			bin, _ := json.Marshal(tuple)
 			for _, v := range sw.sucIndexMap {
-				fmt.Printf("v: %v\n", v)
 				sucid := utils.Hash(tuple[sw.sucField]) % len(v)
 				sucConnId := v[sucid+1]
 				sw.publisher.PublishBoard <- messages.Message{
