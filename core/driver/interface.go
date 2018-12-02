@@ -181,36 +181,35 @@ func (d *Driver) BuildTopology(topo *topology.Topology) {
 	log.Println("Supervisors", addrs, keys)
 
 	countMap := make(map[string]int)
-	spoutsSuccBoltsConnIdMap := make(map[string]map[string]map[string]int)
 
+	//spoutsSuccBoltsConnIdMap := make(map[string]map[string]map[string]int)
 	// generate bolts connection ID to count num mapping
-	for _, k := range keys {
-		tasks := addrs[k]
-		targetId := d.SupervisorIdMap[uint32(k)]
-		for _, task := range tasks {
-			bolt, ok := task.(*bolt.BoltInst)
-			if !ok {
-				continue
-			}
-			if countMap[bolt.Name] == 0 {
-				countMap[bolt.Name] = 1
-			}
-			for _, spoutName := range bolt.PrevTaskNames {
-				_, ok = d.SpoutMap[spoutName]
-				if ok {
-					if spoutsSuccBoltsConnIdMap[spoutName] == nil {
-						spoutsSuccBoltsConnIdMap[spoutName] = make(map[string]map[string]int)
-						spoutsSuccBoltsConnIdMap[spoutName][bolt.Name] = make(map[string]int)
+	/*for _, k := range keys {*/
+	//tasks := addrs[k]
+	//targetId := d.SupervisorIdMap[uint32(k)]
+	//for _, task := range tasks {
+	//bolt, ok := task.(*bolt.BoltInst)
+	//if !ok {
+	//continue
+	//}
+	//if countMap[bolt.Name] == 0 {
+	//countMap[bolt.Name] = 1
+	//}
+	//for _, spoutName := range bolt.PrevTaskNames {
+	//_, ok = d.SpoutMap[spoutName]
+	//if ok {
+	//if spoutsSuccBoltsConnIdMap[spoutName] == nil {
+	//spoutsSuccBoltsConnIdMap[spoutName] = make(map[string]map[string]int)
+	//spoutsSuccBoltsConnIdMap[spoutName][bolt.Name] = make(map[string]int)
 
-					}
-					spoutsSuccBoltsConnIdMap[spoutName][bolt.Name][targetId] = countMap[bolt.Name]
-				}
-			}
-			countMap[bolt.Name]++
-		}
-	}
+	//}
+	//spoutsSuccBoltsConnIdMap[spoutName][bolt.Name][targetId] = countMap[bolt.Name]
+	//}
+	//}
+	//countMap[bolt.Name]++
+	//}
+	/*}*/
 
-	countMap = make(map[string]int)
 	if d.SnapshotVersion > 0 {
 		for _, k := range keys {
 			tasks := addrs[k]
