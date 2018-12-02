@@ -9,7 +9,7 @@ import (
 )
 
 const (
-	CHANNEL_SIZE = 100
+	CHANNEL_SIZE = 1024
 	CONN_DELETE  = "delete"
 )
 
