@@ -19,7 +19,7 @@ func main() {
 	// Create a bolt
 	// Params: name, pluginFile, pluginSymbol, groupingHint, fieldIndex
 	bm := bolt.NewBoltInst("ProcFunc", "process.so", "ProcFunc", utils.GROUPING_BY_ALL, 0)
-	bm.SetInstanceNum(9)
+	bm.SetInstanceNum(2)
 	bm.AddPrevTaskName("NextTuple")
 	tm.AddBolt(bm)
 

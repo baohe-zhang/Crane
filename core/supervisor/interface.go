@@ -63,7 +63,7 @@ func (s *Supervisor) StartDaemon() {
 				utils.Unmarshal(payload.Content, filePull)
 				log.Printf("Receive File Pull with Filename %s\n", filePull.Filename)
 				if filePull.Filename != "None" {
-					go s.GetFile(filePull.Filename)
+					s.GetFile(filePull.Filename)
 				}
 
 			case utils.BOLT_TASK:
@@ -116,6 +116,11 @@ func (s *Supervisor) StartDaemon() {
 				// Clear supervisor's worker map
 				s.BoltWorkers = make([]*boltworker.BoltWorker, 0)
 				s.SpoutWorkers = make([]*spoutworker.SpoutWorker, 0)
+
+			case utils.TASK_ADDRESS_MAP:
+				// Send this map to spout, ask spout to establish successor index map
+
+
 			}
 		// default:
 		// 	time.Sleep(10 * time.Millisecond)
@@ -164,7 +169,7 @@ func (s *Supervisor) ListenToWorkers() {
 			case message := <-bw.WorkerC:
 				switch string(message[0]) {
 				case "1":
-					go s.PutFile("./"+bw.Name+"_"+bw.Version, bw.Name+"_"+bw.Version)
+					s.PutFile("./"+bw.Name+"_"+bw.Version, bw.Name+"_"+bw.Version)
 					s.SerializeResponseCounter += 1
 					if s.SerializeResponseCounter == (len(s.BoltWorkers) + len(s.SpoutWorkers)) {
 						s.SerializeResponseCounter = 0

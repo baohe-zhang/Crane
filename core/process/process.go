@@ -11,23 +11,22 @@ import (
 // Sample word count bolt
 func ProcFunc(tuple []interface{}, result *[]interface{}, variables *[]interface{}) error {
 	// Bolt's global variables
-	var countMap map[string]int
+	var countMap map[string]interface{}
 	if (len(*variables) == 0) {
 		// Initialize variables
-		countMap = make(map[string]int)
+		countMap = make(map[string]interface{})
 		*variables = append(*variables, countMap)
 	}
-	countMap = (*variables)[0].(map[string]int)
+	countMap = (*variables)[0].(map[string]interface{})
 
 	// Bolt's process logic
 	word := tuple[0].(string)
-	count, ok := countMap[word]
+	_, ok := countMap[word]
 	if !ok {
-		count = 0
+		countMap[word] = float64(0)
 	}
-	count++
-	countMap[word] = count
-	*result = []interface{}{word, count}
+	countMap[word] = countMap[word].(float64) + 1
+	*result = []interface{}{word, countMap[word].(float64)}
 	fmt.Printf("bolt emit: (%v)\n", *result)
 
 	return nil
@@ -48,7 +47,8 @@ func NextTuple(tuple []interface{}, result *[]interface{}, variables *[]interfac
 	counterMap = (*variables)[0].(map[string]interface{})
 
 	// Logic
-	if counterMap["counter"].(float64) < 201 {
+	if counterMap["counter"].(float64) < 800 {
+		fmt.Printf("spout counter %v\n", counterMap["counter"])
 		*result = []interface{}{words[int(counterMap["counter"].(float64)) % len(words)]}
 		fmt.Printf("spout emit: (%v)\n", *result)
 		counterMap["counter"] = counterMap["counter"].(float64) + 1
