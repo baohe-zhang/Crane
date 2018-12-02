@@ -6,13 +6,13 @@ import (
 	"encoding/json"
 	"fmt"
 	"io/ioutil"
+	"log"
 	"net"
 	"os"
 	"strconv"
 	"strings"
 	"sync"
 	"time"
-	"log"
 )
 
 const (
@@ -163,7 +163,7 @@ func (bw *BoltWorker) Start() {
 func (bw *BoltWorker) receiveTuple() {
 	defer func() {
 		if r := recover(); r != nil {
-			log.Println("Recovered in f", r)
+			log.Println("receiveTupel recovered", r)
 		}
 	}()
 	for {

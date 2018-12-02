@@ -373,7 +373,7 @@ func (d *Driver) RestoreRequest() {
 		}
 	}
 
-	timer := time.NewTimer(2 * time.Second)
+	timer := time.NewTimer(4 * time.Second)
 	d.CtlTimer = append(d.CtlTimer, timer)
 	go func() {
 		<-timer.C
@@ -387,7 +387,7 @@ func (d *Driver) RestoreRequest() {
 // before request backup snapshot for each node workers
 func (d *Driver) SuspendRequest() {
 	for {
-		time.Sleep(30 * time.Second)
+		time.Sleep(50 * time.Second)
 		hostConnIdMap := make(map[string]string)
 		for _, connId := range d.SupervisorIdMap {
 			host, _, _ := net.SplitHostPort(connId)
