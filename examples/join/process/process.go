@@ -50,19 +50,19 @@ func GenderSpout(tuple []interface{}, result *[]interface{}, variables *[]interf
 	// Variables
 	var counter interface{}
 	if (len(*variables) == 0) {
+		counter = new(float64)
 		*variables = append(*variables, counter)
-		counter = float64(1)
 	}
 	counter = (*variables)[0]
 
 	// Logic
-	if counter.(float64) < 21 {
-		if int(counter.(float64)) % 2 == 0 {
-			*result = []interface{}{strconv.Itoa(int(counter.(float64))), "male"}
+	if (*counter.(*float64)) < 21 {
+		if int((*counter.(*float64))) % 2 == 0 {
+			*result = []interface{}{strconv.Itoa(int((*counter.(*float64)))), "male"}
 		} else {
-			*result = []interface{}{strconv.Itoa(int(counter.(float64))), "female"}
+			*result = []interface{}{strconv.Itoa(int((*counter.(*float64)))), "female"}
 		}
-		counter = counter.(float64) + 1
+		(*counter.(*float64)) = (*counter.(*float64)) + 1
 	}
 
 	time.Sleep(100 * time.Millisecond)
@@ -76,59 +76,29 @@ func GenderSpout(tuple []interface{}, result *[]interface{}, variables *[]interf
 	}
 }
 
+// Sample age spout. emit (id, age)
+func AgeSpout(tuple []interface{}, result *[]interface{}, variables *[]interface{}) error {
+	// Variables
+	var counter interface{}
+	if (len(*variables) == 0) {
+		counter = new(float64)
+		*variables = append(*variables, counter)
+	}
+	counter = (*variables)[0]
 
+	// Logic
+	if (*counter.(*float64)) < 21 {
+		*result = []interface{}{strconv.Itoa(int((*counter.(*float64)))), strconv.Itoa(int((*counter.(*float64))) + 20)}
+		(*counter.(*float64)) = (*counter.(*float64)) + 1
+	}
 
-// // Sample word count bolt
-// func ProcFunc(tuple []interface{}, result *[]interface{}, variables *[]interface{}) error {
-// 	// Bolt's global variables
-// 	var countMap map[string]interface{}
-// 	if (len(*variables) == 0) {
-// 		// Initialize variables
-// 		countMap = make(map[string]interface{})
-// 		*variables = append(*variables, countMap)
-// 	}
-// 	countMap = (*variables)[0].(map[string]interface{})
+	time.Sleep(100 * time.Millisecond)
 
-// 	// Bolt's process logic
-// 	word := tuple[0].(string)
-// 	_, ok := countMap[word]
-// 	if !ok {
-// 		countMap[word] = float64(0)
-// 	}
-// 	countMap[word] = countMap[word].(float64) + 1
-// 	*result = []interface{}{word, countMap[word].(float64)}
-// 	fmt.Printf("bolt emit: (%v)\n", *result)
-
-// 	return nil
-// }
-
-// // Sample word generator
-// func NextTuple(tuple []interface{}, result *[]interface{}, variables *[]interface{}) error {
-// 	// Variables
-// 	words := []string{"china", "usa", "japan", "korea", "russia", "india", "singapore"}
-// 	var counterMap map[string]interface{}
-
-// 	if (len(*variables) == 0) {
-// 		// Initialize variables
-// 		counterMap = make(map[string]interface{})
-// 		*variables = append(*variables, counterMap)
-// 		counterMap["counter"] = float64(0)
-// 	}
-// 	counterMap = (*variables)[0].(map[string]interface{})
-
-// 	// Logic
-// 	if counterMap["counter"].(float64) < 800 {
-// 		fmt.Printf("spout counter %v\n", counterMap["counter"])
-// 		*result = []interface{}{words[int(counterMap["counter"].(float64)) % len(words)]}
-// 		fmt.Printf("spout emit: (%v)\n", *result)
-// 		counterMap["counter"] = counterMap["counter"].(float64) + 1
-// 	}
-// 	time.Sleep(100 * time.Millisecond)
-
-// 	// Return value
-// 	if (len(*result) > 0) {
-// 		return nil
-// 	} else {
-// 		return errors.New("next tuple is nil")
-// 	}
-// }
+	// Return value
+	if (len(*result) > 0) {
+		log.Printf("Spout Emit (%v)\n", *result)
+		return nil
+	} else {
+		return errors.New("next tuple is nil")
+	}
+}
