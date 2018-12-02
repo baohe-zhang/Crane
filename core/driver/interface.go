@@ -211,11 +211,9 @@ func (d *Driver) BuildTopology(topo *topology.Topology) {
 					for _, spoutName := range bolt.PrevTaskNames {
 						_, ok = d.SpoutMap[spoutName]
 						if ok {
-							if spoutsSuccBoltsConnIdMap[spoutName] == nil {
-								spoutsSuccBoltsConnIdMap[spoutName] = make(map[string]map[string]int)
-								spoutsSuccBoltsConnIdMap[spoutName][bolt.Name] = make(map[string]int)
-							}
 							spoutsSuccBoltsConnIdMap[spoutName][bolt.Name][targetId] = countMap[bolt.Name]
+							log.Println("CountMap", countMap)
+							log.Println("MapValue", spoutsSuccBoltsConnIdMap[spoutName][bolt.Name][targetId])
 						}
 					}
 					stateFileName := bolt.Name + "_" + fmt.Sprintf("%d_%d", countMap[bolt.Name], d.SnapshotVersion-1)
