@@ -94,7 +94,7 @@ func (sw *SpoutWorker) Start() {
 
 	// Listen to subscriber, they will tell who they are
 	go sw.listenToSubscribers()
-	time.Sleep(2 * time.Second) // Wait for spout to establish suc index map
+	time.Sleep(4 * time.Second) // Wait for spout to establish suc index map
 	fmt.Printf("Map: %v\n", sw.sucIndexMap)
 
 	go sw.receiveTuple()
