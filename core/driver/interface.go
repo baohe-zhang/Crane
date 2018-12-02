@@ -74,17 +74,16 @@ func (d *Driver) StartDaemon() {
 					content := &messages.ConnNotify{}
 					utils.Unmarshal(payload.Content, content)
 					if content.Type == messages.CONN_DELETE {
+						for _, timer := range d.CtlTimer {
+							log.Println("Clean previous timer")
+							timer.Stop()
+						}
+						d.CtlTimer = d.CtlTimer[1:]
+
 						d.LockSIM.RLock()
 						for index, connId_ := range d.SupervisorIdMap {
 							if connId_ == connId {
 								d.SupervisorIdMap = append(d.SupervisorIdMap[:index], d.SupervisorIdMap[index+1:]...)
-								if len(d.CtlTimer) >= 1 {
-									for _, timer := range d.CtlTimer {
-										log.Println("Clean previous timer")
-										timer.Stop()
-									}
-									d.CtlTimer = d.CtlTimer[1:]
-								}
 								delete(d.Pub.Channels, connId)
 								d.RestoreRequest()
 							}
@@ -255,8 +254,6 @@ func (d *Driver) BuildTopology(topo *topology.Topology) {
 		}
 	}
 
-	time.Sleep(5 * time.Second) // Sleep 10s to ensure all supervisors fetch the .so file
-
 	// Stage 2 : Send the task message information to supervisors
 	countMap = make(map[string]int)
 	for _, id := range keys {
@@ -335,7 +332,7 @@ func (d *Driver) BuildTopology(topo *topology.Topology) {
 		}
 	}
 
-	time.Sleep(5 * time.Second)
+	time.Sleep(2 * time.Second)
 
 	// Stage 3 : Send dispatch signal
 	for id, _ := range addrs {
