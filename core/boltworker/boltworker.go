@@ -184,21 +184,25 @@ func (bw *BoltWorker) receiveTuple() {
 
 func (bw *BoltWorker) distributeTuple() {
 	// TODO: only need group by field
-	switch bw.preGrouping = utils.GROUPING_BY_FIELD; bw.preGrouping {
+	switch bw.preGrouping = utils.GROUPING_BY_SHUFFLE; bw.preGrouping {
 	case utils.GROUPING_BY_SHUFFLE:
 		for tuple := range bw.tuples {
-			processed := false
-			for !processed {
-				// Round-Robin distribute
-				for _, executor := range bw.executors {
-					if executor.available {
-						go executor.processTuple(tuple)
-						processed = true
-						break
-					}
-				}
-			}
+			bw.executors[0].processTuple(tuple)
 		}
+	// case utils.GROUPING_BY_SHUFFLE:
+	// 	for tuple := range bw.tuples {
+	// 		processed := false
+	// 		for !processed {
+	// 			// Round-Robin distribute
+	// 			for _, executor := range bw.executors {
+	// 				if executor.available {
+	// 					go executor.processTuple(tuple)
+	// 					processed = true
+	// 					break
+	// 				}
+	// 			}
+	// 		}
+	// 	}
 	case utils.GROUPING_BY_FIELD:
 		for tuple := range bw.tuples {
 			execid := utils.Hash(tuple[bw.preField]) % bw.numWorkers
@@ -217,7 +221,7 @@ func (bw *BoltWorker) distributeTuple() {
 }
 
 func (e *Executor) processTuple(tuple []interface{}) {
-	e.available = false
+	// e.available = false
 
 	// fmt.Printf("executor (%d) process tuple (%v)\n", e.id, tuple)
 	var result []interface{}
@@ -227,7 +231,7 @@ func (e *Executor) processTuple(tuple []interface{}) {
 		e.results <- result
 	}
 
-	e.available = true
+	// e.available = true
 }
 
 func (bw *BoltWorker) outputTuple() {

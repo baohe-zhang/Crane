@@ -28,8 +28,8 @@ func MergeBolt(tuple []interface{}, result *[]interface{}, variables *[]interfac
 	// Process logic
 	if len(tuple) == 3{
 		id := tuple[0].(string)
-		idMap[id].([]interface{})[0] = tuple[1]
-		idMap[id].([]interface{})[1] = tuple[2]
+		idMap[id].([]interface{})[0] = tuple[1].(string)
+		idMap[id].([]interface{})[1] = tuple[2].(string)
 		log.Printf("Merge Bolt Emit (%v)\n", tuple)
 	}
 
