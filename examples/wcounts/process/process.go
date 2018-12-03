@@ -81,7 +81,7 @@ func SentenceSpout(tuple []interface{}, result *[]interface{}, variables *[]inte
 		log.Printf("Sentence Spout Emit: (%v)\n", *result)
 		counterMap["counter"] = counterMap["counter"].(float64) + 1
 	}
-	time.Sleep(2 * time.Millisecond)
+	time.Sleep(10 * time.Millisecond)
 
 	// Return value
 	if (len(*result) > 0) {
