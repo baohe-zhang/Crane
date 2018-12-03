@@ -17,14 +17,14 @@ func main() {
 	tm.AddSpout(sp)
 
 	// Create bolts
-	sb := bolt.NewBoltInst("WordSplitBolt", "process.so", "WordSplitBolt", utils.GROUPING_BY_FIELD, 0)
-	sb.SetInstanceNum(1)
-	sb.AddPrevTaskName("WordSpout")
-	tm.AddBolt(sb)
+	// sb := bolt.NewBoltInst("WordSplitBolt", "process.so", "WordSplitBolt", utils.GROUPING_BY_FIELD, 0)
+	// sb.SetInstanceNum(1)
+	// sb.AddPrevTaskName("WordSpout")
+	// tm.AddBolt(sb)
 
 	cb := bolt.NewBoltInst("WordCountBolt", "process.so", "WordCountBolt", utils.GROUPING_BY_ALL, 0)
-	cb.SetInstanceNum(7)
-	cb.AddPrevTaskName("WordSplitBolt")
+	cb.SetInstanceNum(8)
+	cb.AddPrevTaskName("WordSpout")
 	tm.AddBolt(cb)
 
 	tm.SubmitFile("./process.so", "process.so")
