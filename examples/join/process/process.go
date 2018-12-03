@@ -11,6 +11,11 @@ import (
 	"strconv"
 )
 
+// Sample merge bolt. Merge all join bolt's result
+func MergeBolt(tuple []interface{}, result *[]interface{}, variables *[]interface{}) error {
+	log.Printf("Merge Bolt Emit (%v)\n", tuple)
+	return nil
+}
 
 // Sample join bolt. (id, gender) + (id, age) -> (id, gender, age)
 func GenderAgeJoinBolt(tuple []interface{}, result *[]interface{}, variables *[]interface{}) error {

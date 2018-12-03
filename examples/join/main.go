@@ -27,7 +27,13 @@ func main() {
 	bm.AddPrevTaskName("AgeSpout")
 	tm.AddBolt(bm)
 
+	// Merge bolt
+	mergeBolt := bolt.NewBoltInst("MergeBolt", "process.so", "MergeBolt", utils.GROUPING_BY_ALL, 0)
+	mergeBolt.SetInstanceNum(1)
+	mergeBolt.AddPrevTaskName("GenderAgeJoinBolt")
+	tm.AddBolt(mergeBolt)
+
 	tm.SubmitFile("./process.so", "process.so")
-	tm.SubmitFile("./data.json", "data.json")
+	// tm.SubmitFile("./data.json", "data.json")
 	tm.Submit(":5050")
 }
