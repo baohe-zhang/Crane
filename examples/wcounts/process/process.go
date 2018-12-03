@@ -5,13 +5,34 @@ import (
 	"log"
 	"time"
 	"errors"
+	"strings"
 	// "os"
 	// "bufio"
 )
 
+// Sample word split bolt
+func WordSplitBolt(tuple []interface{}, result *[]interface{}, variables *[]interface{}) error {
+	// Doesn't have state varuables
+
+	// Process Logic
+	sentence := tuple[0].(string)
+	words := strings.Fields(sentence)
+
+	for _, word := range words {
+		*result = []interface{}{word}
+	}
+
+	if len(*result) > 0 {
+		log.Printf("Word Split Bolt Emit: (%v)\n", *result)
+		return nil
+	} else {
+		return errors.New("next tuple is nil")
+	}
+}
+
 // Sample word count bolt
-func ProcFunc(tuple []interface{}, result *[]interface{}, variables *[]interface{}) error {
-	// Bolt's global variables
+func WordCountBolt(tuple []interface{}, result *[]interface{}, variables *[]interface{}) error {
+	// Bolt's state variables
 	var countMap map[string]interface{}
 	if (len(*variables) == 0) {
 		// Initialize variables
@@ -28,15 +49,21 @@ func ProcFunc(tuple []interface{}, result *[]interface{}, variables *[]interface
 	}
 	countMap[word] = countMap[word].(float64) + 1
 	*result = []interface{}{word, countMap[word].(float64)}
-	log.Printf("Bolt Emit: (%v)\n", *result)
+	log.Printf("Word Count Bolt Emit: (%v)\n", *result)
 
 	return nil
 }
 
 // Sample word generator
-func NextTuple(tuple []interface{}, result *[]interface{}, variables *[]interface{}) error {
+func SentenceSpout(tuple []interface{}, result *[]interface{}, variables *[]interface{}) error {
 	// Variables
-	words := []string{"china", "usa", "japan", "korea", "russia", "india", "singapore", "canada", "mexico", "france", "germany", "greek", "finland"}
+	sentences := []string{
+		"the cow jumped over the moon",
+		"an apple a day keeps the doctor away",
+		"four score and seven years ago",
+		"snow white and the seven dwarfs",
+		"i am at two with nature",
+	}
 	var counterMap map[string]interface{}
 
 	if (len(*variables) == 0) {
@@ -49,9 +76,9 @@ func NextTuple(tuple []interface{}, result *[]interface{}, variables *[]interfac
 
 	// Logic
 	if counterMap["counter"].(float64) < 1000 {
-		log.Printf("Spout Counter %v\n", counterMap["counter"])
-		*result = []interface{}{words[int(counterMap["counter"].(float64)) % len(words)]}
-		log.Printf("Spout Emit: (%v)\n", *result)
+		log.Printf("Sentence Spout Counter %v\n", counterMap["counter"])
+		*result = []interface{}{sentences[int(counterMap["counter"].(float64)) % len(sentences)]}
+		log.Printf("Sentence Spout Emit: (%v)\n", *result)
 		counterMap["counter"] = counterMap["counter"].(float64) + 1
 	}
 	time.Sleep(2 * time.Millisecond)
