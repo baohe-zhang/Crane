@@ -5,30 +5,42 @@ import (
 	"log"
 	"time"
 	"errors"
-	// "strings"
+	"strings"
 	// "os"
 	// "bufio"
 )
 
-// // Sample word split bolt
-// func WordSplitBolt(tuple []interface{}, result *[]interface{}, variables *[]interface{}) error {
-// 	// Doesn't have state varuables
+// Sample word split bolt
+func WordSplitBolt(tuple []interface{}, result *[]interface{}, variables *[]interface{}) error {
+	// State Variables
+	var queue []interface{}
+	if len(*variables) == 0 {
+		queue := make([]interface{}, 0)
+		*variables = append(*variables, queue)
+	}
+	queue = (*variables)[0].([]interface{})
 
-// 	// Process Logic
-// 	sentence := tuple[0].(string)
-// 	words := strings.Fields(sentence)
+	// Process Logic
+	sentence := tuple[0].(string)
+	words := strings.Fields(sentence)
 
-// 	for _, word := range words {
-// 		*result = []interface{}{word}
-// 	}
+	for _, word := range words {
+		queue = append(queue, word)
+		*result = []interface{}{word}
+	}
 
-// 	if len(*result) > 0 {
-// 		log.Printf("Word Split Bolt Emit: (%v)\n", *result)
-// 		return nil
-// 	} else {
-// 		return errors.New("next tuple is nil")
-// 	}
-// }
+	if len(queue) > 0 {
+		*result = []interface{}{queue[0]}
+		queue = queue[1:]
+	}
+
+	if len(*result) > 0 && *result != nil {
+		log.Printf("Word Split Bolt Emit: (%v)\n", *result)
+		return nil
+	} else {
+		return errors.New("next tuple is nil")
+	}
+}
 
 // Sample word count bolt
 func WordCountBolt(tuple []interface{}, result *[]interface{}, variables *[]interface{}) error {
