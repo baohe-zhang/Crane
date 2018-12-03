@@ -6,8 +6,8 @@ import (
 	"time"
 	"errors"
 	"strings"
-	// "os"
-	// "bufio"
+	"os"
+	"bufio"
 )
 
 // Sample word split bolt
@@ -62,10 +62,7 @@ func WordCountBolt(tuple []interface{}, result *[]interface{}, variables *[]inte
 // Sample word generator
 func WordSpout(tuple []interface{}, result *[]interface{}, variables *[]interface{}) error {
 	// Variables
-	words := []string{
-		// "the", "cow", "jumped", "over", "moon",
-		"the cow jumped over moon",
-	}
+	var words []string
 	var counterMap map[string]interface{}
 
 	if (len(*variables) == 0) {
@@ -73,6 +70,15 @@ func WordSpout(tuple []interface{}, result *[]interface{}, variables *[]interfac
 		counterMap = make(map[string]interface{})
 		*variables = append(*variables, counterMap)
 		counterMap["counter"] = float64(0)
+
+		words = make([]string, 0)
+		*variables = append(*variables, words)
+
+		file, _ := os.Open("corputs.txt")
+		scanner := bufio.NewScanner(file)
+		for scanner.Scan() {
+			words = append(words, scanner.Text())
+		}
 	}
 	counterMap = (*variables)[0].(map[string]interface{})
 
