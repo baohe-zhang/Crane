@@ -5,42 +5,29 @@ import (
 	"log"
 	"time"
 	"errors"
-	// "strings"
+	"strings"
 	// "os"
 	// "bufio"
 )
 
-// // Sample word split bolt
-// func WordSplitBolt(tuple []interface{}, result *[]interface{}, variables *[]interface{}) error {
-// 	// State Variables
-// 	var queue []interface{}
-// 	if len(*variables) == 0 {
-// 		queue := make([]interface{}, 0)
-// 		*variables = append(*variables, queue)
-// 	}
-// 	queue = (*variables)[0].([]interface{})
+// Sample word split bolt
+func WordSplitBolt(tuple []interface{}, result *[]interface{}, variables *[]interface{}) error {
+	// Process Logic
+	sentence := tuple[0].(string)
+	words := strings.Fields(sentence)
 
-// 	// Process Logic
-// 	sentence := tuple[0].(string)
-// 	words := strings.Fields(sentence)
+	// for _, word := range words {
+	// 	*result = append(*result, word)
+	// }
+	*result = []interface{}{words}
 
-// 	for _, word := range words {
-// 		queue = append(queue, word)
-// 	}
-
-// 	if len(queue) > 0 {
-// 		*result = []interface{}{queue[0].(string)}
-// 		queue = queue[1:]
-// 		(*variables)[0] = queue
-// 	}
-
-// 	if len(*result) > 0 && *result != nil {
-// 		log.Printf("Word Split Bolt Emit: (%v)\n", *result)
-// 		return nil
-// 	} else {
-// 		return errors.New("next tuple is nil")
-// 	}
-// }
+	if len(*result) > 0 {
+		log.Printf("Word Split Bolt Emit: (%v)\n", *result)
+		return nil
+	} else {
+		return errors.New("next tuple is nil")
+	}
+}
 
 // Sample word count bolt
 func WordCountBolt(tuple []interface{}, result *[]interface{}, variables *[]interface{}) error {
@@ -54,14 +41,15 @@ func WordCountBolt(tuple []interface{}, result *[]interface{}, variables *[]inte
 	countMap = (*variables)[0].(map[string]interface{})
 
 	// Bolt's process logic
-	word := tuple[0].(string)
-	_, ok := countMap[word]
-	if !ok {
-		countMap[word] = float64(0)
+	for index, _ := range tuple {
+		word := tuple[index].(string)
+		_, ok := countMap[word]
+		if !ok {
+			countMap[word] = float64(0)
+		}
+		countMap[word] = countMap[word].(float64) + 1
+		log.Printf("Word Count Bolt Emit: (%v)\n", []interface{}{word, countMap[word].(float64)})
 	}
-	countMap[word] = countMap[word].(float64) + 1
-	*result = []interface{}{word, countMap[word].(float64)}
-	log.Printf("Word Count Bolt Emit: (%v)\n", *result)
 
 	// Return value
 	if (len(*result) > 0) {
@@ -76,7 +64,7 @@ func WordSpout(tuple []interface{}, result *[]interface{}, variables *[]interfac
 	// Variables
 	words := []string{
 		// "the", "cow", "jumped", "over", "moon",
-		"the", "cow", "jumped", "over", "moon",
+		"the cow jumped over moon",
 	}
 	var counterMap map[string]interface{}
 
