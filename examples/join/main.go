@@ -22,16 +22,16 @@ func main() {
 	// Create a bolt
 	// Params: name, pluginFile, pluginSymbol, groupingHint, fieldIndex
 	bm := bolt.NewBoltInst("GenderAgeJoinBolt", "process.so", "GenderAgeJoinBolt", utils.GROUPING_BY_ALL, 0)
-	bm.SetInstanceNum(20)
+	bm.SetInstanceNum(7)
 	bm.AddPrevTaskName("GenderSpout")
 	bm.AddPrevTaskName("AgeSpout")
 	tm.AddBolt(bm)
 
-	// Merge bolt
-	mergeBolt := bolt.NewBoltInst("MergeBolt", "process.so", "MergeBolt", utils.GROUPING_BY_ALL, 0)
-	mergeBolt.SetInstanceNum(1)
-	mergeBolt.AddPrevTaskName("GenderAgeJoinBolt")
-	tm.AddBolt(mergeBolt)
+	// // Merge bolt
+	// mergeBolt := bolt.NewBoltInst("MergeBolt", "process.so", "MergeBolt", utils.GROUPING_BY_ALL, 0)
+	// mergeBolt.SetInstanceNum(1)
+	// mergeBolt.AddPrevTaskName("GenderAgeJoinBolt")
+	// tm.AddBolt(mergeBolt)
 
 	tm.SubmitFile("./process.so", "process.so")
 	// tm.SubmitFile("./data.json", "data.json")
