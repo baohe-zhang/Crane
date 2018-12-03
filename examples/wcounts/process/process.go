@@ -54,7 +54,7 @@ func NextTuple(tuple []interface{}, result *[]interface{}, variables *[]interfac
 		log.Printf("Spout Emit: (%v)\n", *result)
 		counterMap["counter"] = counterMap["counter"].(float64) + 1
 	}
-	time.Sleep(10 * time.Millisecond)
+	time.Sleep(2 * time.Millisecond)
 
 	// Return value
 	if (len(*result) > 0) {
