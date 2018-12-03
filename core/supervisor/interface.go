@@ -72,7 +72,7 @@ func (s *Supervisor) StartDaemon() {
 				log.Printf("Receive Bolt Dispatch %s with Port %s, Previous workers %v\n", task.Name, task.Port, task.PrevBoltAddr)
 				supervisorC := make(chan string) // Channel to talk to the worker
 				workerC := make(chan string)     // Channel to listen to the worker
-				bw := boltworker.NewBoltWorker(10, task.Name, "./"+task.PluginFile, task.PluginSymbol,
+				bw := boltworker.NewBoltWorker(1, task.Name, "./"+task.PluginFile, task.PluginSymbol,
 					task.Port, task.PrevBoltAddr, task.PrevBoltGroupingHint, task.PrevBoltFieldIndex,
 					task.SuccBoltGroupingHint, task.SuccBoltFieldIndex, supervisorC, workerC, task.SnapshotVersion)
 				s.BoltWorkers = append(s.BoltWorkers, bw)

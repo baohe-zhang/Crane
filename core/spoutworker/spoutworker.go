@@ -16,7 +16,7 @@ import (
 )
 
 const (
-	BUFLEN = 100
+	BUFLEN = 1024
 )
 
 type SpoutWorker struct {

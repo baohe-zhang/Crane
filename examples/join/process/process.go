@@ -8,9 +8,37 @@ import (
 	"os"
 	"io/ioutil"
 	"encoding/json"
-	"strconv"
+	// "strconv"
 )
 
+// Sample merge bolt. Merge all join bolt's result
+func MergeBolt(tuple []interface{}, result *[]interface{}, variables *[]interface{}) error {
+	var idMap map[string]interface{}
+	// Initialize variables
+	if (len(*variables) == 0) {
+		idMap = make(map[string]interface{})
+		// for id_ := 0; id_ < 5000; id_++ {
+		// 	idMap[strconv.Itoa(id_)] = make([]interface{}, 2)
+		// }
+		*variables = append(*variables, idMap)
+	}
+	// Get variables
+	idMap = (*variables)[0].(map[string]interface{})
+
+	// Process logic
+	id := tuple[0].(string)
+	_, ok := idMap[id]
+	if !ok {
+		idMap[id] = make([]interface{}, 2) // Create an interface array to store sex and age
+	}
+	if len(tuple) == 3{
+		idMap[id].([]interface{})[0] = tuple[1].(string)
+		idMap[id].([]interface{})[1] = tuple[2].(string)
+		log.Printf("Merge Bolt Emit (%v), Collect %d Tuples\n", tuple, len(idMap))
+	}
+
+	return nil
+}
 
 // Sample join bolt. (id, gender) + (id, age) -> (id, gender, age)
 func GenderAgeJoinBolt(tuple []interface{}, result *[]interface{}, variables *[]interface{}) error {
@@ -19,6 +47,9 @@ func GenderAgeJoinBolt(tuple []interface{}, result *[]interface{}, variables *[]
 	// Initialize variables
 	if (len(*variables) == 0) {
 		idMap = make(map[string]interface{})
+		// for id_ := 0; id_ < 5000; id_++ {
+		// 	idMap[strconv.Itoa(id_)] = make([]interface{}, 2)
+		// }
 		*variables = append(*variables, idMap)
 	}
 	// Get variables
@@ -52,24 +83,48 @@ func GenderAgeJoinBolt(tuple []interface{}, result *[]interface{}, variables *[]
 func GenderSpout(tuple []interface{}, result *[]interface{}, variables *[]interface{}) error {
 	// Variables
 	var counterMap map[string]interface{}
+	var idArray interface{}
+	var genderArray interface{}
+
 	if (len(*variables) == 0) {
 		counterMap = make(map[string]interface{})
 		*variables = append(*variables, counterMap)
 		counterMap["counter"] = float64(0)
+
+		file, _ := os.Open("data.json")
+		defer file.Close()
+
+		b, _ := ioutil.ReadAll(file)
+		var object interface{}
+		json.Unmarshal(b, &object)
+		objectMap := object.(map[string]interface{})
+		idArray = objectMap["id"].([]interface{})
+		genderArray = objectMap["gender"].([]interface{})
+
+		*variables = append(*variables, idArray)
+		*variables = append(*variables, genderArray)
 	}
 	counterMap = (*variables)[0].(map[string]interface{})
+	idArray = (*variables)[1]
+	genderArray = (*variables)[2]
 
 	// Logic
-	if counterMap["counter"].(float64) < 10 {
-		if int(counterMap["counter"].(float64)) % 2 == 0 {
-			*result = []interface{}{strconv.Itoa(int(counterMap["counter"].(float64))), "male"}
-		} else {
-			*result = []interface{}{strconv.Itoa(int(counterMap["counter"].(float64))), "female"}
-		}
+	if counterMap["counter"].(float64) < 1000 {
+		*result = []interface{}{idArray.([]interface{})[int(counterMap["counter"].(float64))], genderArray.([]interface{})[int(counterMap["counter"].(float64))]}
 		counterMap["counter"] = counterMap["counter"].(float64) + 1
 	}
 
-	time.Sleep(10 * time.Millisecond)
+	// // Logic
+	// if counterMap["counter"].(float64) < 10 {
+	// 	if int(counterMap["counter"].(float64)) % 2 == 0 {
+	// 		*result = []interface{}{strconv.Itoa(int(counterMap["counter"].(float64))), "male"}
+	// 	} else {
+	// 		*result = []interface{}{strconv.Itoa(int(counterMap["counter"].(float64))), "female"}
+	// 	}
+	// 	counterMap["counter"] = counterMap["counter"].(float64) + 1
+	// }
+
+	time.Sleep(1 * time.Millisecond)
 
 	// Return value
 	if (len(*result) > 0) {
@@ -110,7 +165,7 @@ func AgeSpout(tuple []interface{}, result *[]interface{}, variables *[]interface
 	ageArray = (*variables)[2]
 
 	// Logic
-	if counterMap["counter"].(float64) < 10 {
+	if counterMap["counter"].(float64) < 1000 {
 		*result = []interface{}{idArray.([]interface{})[int(counterMap["counter"].(float64))], ageArray.([]interface{})[int(counterMap["counter"].(float64))]}
 		counterMap["counter"] = counterMap["counter"].(float64) + 1
 	}
@@ -121,7 +176,7 @@ func AgeSpout(tuple []interface{}, result *[]interface{}, variables *[]interface
 	// 	counterMap["counter"] = counterMap["counter"].(float64) + 1
 	// }
 
-	time.Sleep(10 * time.Millisecond)
+	time.Sleep(1 * time.Millisecond)
 
 	// Return value
 	if (len(*result) > 0) {

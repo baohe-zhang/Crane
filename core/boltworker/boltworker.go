@@ -16,7 +16,7 @@ import (
 )
 
 const (
-	BUFLEN   = 100
+	BUFLEN   = 1024
 	BUFFSIZE = 1024
 )
 
@@ -34,7 +34,7 @@ type BoltWorker struct {
 	preField    int
 	sucGrouping string
 	sucField    int
-	sucIndexMap map[int]string
+	sucIndexMap map[string]map[int]string
 	rwmutex     sync.RWMutex
 	wg          sync.WaitGroup
 	SupervisorC chan string
@@ -81,8 +81,8 @@ func NewBoltWorker(numWorkers int, name string,
 	var publisher *messages.Publisher
 	subscribers := make([]*messages.Subscriber, 0)
 
-	// Record the index of successor
-	sucIndexMap := make(map[int]string)
+	// A map to record the index of successor
+	sucIndexMap := make(map[string]map[int]string)
 
 	bw := &BoltWorker{
 		Name:        name,
@@ -135,17 +135,22 @@ func (bw *BoltWorker) Start() {
 	}
 	time.Sleep(1 * time.Second) // Wait for all subscriber established
 
+	// Listen to subscriber, they will tell who they are
+	go bw.listenToSubscribers()
+
 	// Tell the previous hop who am I
 	for _, subscriber := range bw.subscribers {
 		bin, _ := json.Marshal(bw.Name)
 		subscriber.Request <- messages.Message{
 			Payload: bin,
 		}
-		fmt.Println("hi")
 	}
 	// End tell
 
-	bw.buildSucIndexMap()
+	time.Sleep(2 * time.Second) // Wait for spout to establish suc index map
+	fmt.Printf("Map: %v\n", bw.sucIndexMap)
+
+	// bw.buildSucIndexMap()
 
 	// Start channel with supervisor
 	go bw.TalkWithSupervisor()
@@ -158,6 +163,35 @@ func (bw *BoltWorker) Start() {
 	bw.wg.Wait()
 	bw.publisher.Close()
 	log.Printf("Bolt Worker %s Terminates\n", bw.Name)
+}
+
+func (bw *BoltWorker) listenToSubscribers() {
+	defer func() {
+		if r := recover(); r != nil {
+			log.Println("listenToSubscribers panic and recovered", r)
+		}
+	}()
+	for {
+		for connId, channel := range bw.publisher.Channels {
+			bw.publisher.RWLock.RLock()
+			select {
+			case message := <- channel:
+				log.Println(message)
+				var workerName string
+				json.Unmarshal(message.Payload, &workerName)
+				words := strings.Split(workerName, "_")
+				boltType := words[0]
+				boltIndex := words[1]
+				if (bw.sucIndexMap[boltType] == nil) {
+					bw.sucIndexMap[boltType] = make(map[int]string)
+				}
+				index, _ := strconv.Atoi(boltIndex)
+				bw.sucIndexMap[boltType][index] = connId
+			default:
+			}
+			bw.publisher.RWLock.RUnlock()
+		}
+	}
 }
 
 func (bw *BoltWorker) receiveTuple() {
@@ -185,21 +219,25 @@ func (bw *BoltWorker) receiveTuple() {
 
 func (bw *BoltWorker) distributeTuple() {
 	// TODO: only need group by field
-	switch bw.preGrouping = utils.GROUPING_BY_FIELD; bw.preGrouping {
+	switch bw.preGrouping = utils.GROUPING_BY_SHUFFLE; bw.preGrouping {
 	case utils.GROUPING_BY_SHUFFLE:
 		for tuple := range bw.tuples {
-			processed := false
-			for !processed {
-				// Round-Robin distribute
-				for _, executor := range bw.executors {
-					if executor.available {
-						go executor.processTuple(tuple)
-						processed = true
-						break
-					}
-				}
-			}
+			bw.executors[0].processTuple(tuple)
 		}
+	// case utils.GROUPING_BY_SHUFFLE:
+	// 	for tuple := range bw.tuples {
+	// 		processed := false
+	// 		for !processed {
+	// 			// Round-Robin distribute
+	// 			for _, executor := range bw.executors {
+	// 				if executor.available {
+	// 					go executor.processTuple(tuple)
+	// 					processed = true
+	// 					break
+	// 				}
+	// 			}
+	// 		}
+	// 	}
 	case utils.GROUPING_BY_FIELD:
 		for tuple := range bw.tuples {
 			execid := utils.Hash(tuple[bw.preField]) % bw.numWorkers
@@ -218,15 +256,17 @@ func (bw *BoltWorker) distributeTuple() {
 }
 
 func (e *Executor) processTuple(tuple []interface{}) {
-	e.available = false
+	// e.available = false
 
 	// fmt.Printf("executor (%d) process tuple (%v)\n", e.id, tuple)
 	var result []interface{}
 	e.procFunc(tuple, &result, &e.variables)
 	// fmt.Printf("executor %d output tuple (%v)\n", e.id, result)
-	e.results <- result
+	if len(result) > 0 {
+		e.results <- result
+	}
 
-	e.available = true
+	// e.available = true
 }
 
 func (bw *BoltWorker) outputTuple() {
@@ -238,28 +278,28 @@ func (bw *BoltWorker) outputTuple() {
 	switch bw.sucGrouping {
 	case utils.GROUPING_BY_SHUFFLE:
 		count := 0
-		for result := range bw.results {
-			bin, _ := json.Marshal(result)
-			sucid := count % len(bw.sucIndexMap)
-			bw.rwmutex.RLock()
-			sucConnId := bw.sucIndexMap[sucid]
-			bw.rwmutex.RUnlock()
-			bw.publisher.PublishBoard <- messages.Message{
-				Payload:      bin,
-				TargetConnId: sucConnId,
+		for tuple := range bw.tuples {
+			bin, _ := json.Marshal(tuple)
+			for _, v := range bw.sucIndexMap {
+				sucid := count % len(v)
+				sucConnId := v[sucid+1]
+				bw.publisher.PublishBoard <- messages.Message{
+					Payload:      bin,
+					TargetConnId: sucConnId,
+				}
 			}
 			count++
 		}
 	case utils.GROUPING_BY_FIELD:
-		for result := range bw.results {
-			bin, _ := json.Marshal(result)
-			sucid := utils.Hash(result[bw.sucField]) % len(bw.sucIndexMap)
-			bw.rwmutex.RLock()
-			sucConnId := bw.sucIndexMap[sucid]
-			bw.rwmutex.RUnlock()
-			bw.publisher.PublishBoard <- messages.Message{
-				Payload:      bin,
-				TargetConnId: sucConnId,
+		for tuple := range bw.tuples {
+			bin, _ := json.Marshal(tuple)
+			for _, v := range bw.sucIndexMap {
+				sucid := utils.Hash(tuple[bw.sucField]) % len(v)
+				sucConnId := v[sucid+1]
+				bw.publisher.PublishBoard <- messages.Message{
+					Payload:      bin,
+					TargetConnId: sucConnId,
+				}
 			}
 		}
 	case utils.GROUPING_BY_ALL:
@@ -276,15 +316,15 @@ func (bw *BoltWorker) outputTuple() {
 	}
 }
 
-// Build a successor boltworker's [index : netaddr] map
-func (bw *BoltWorker) buildSucIndexMap() {
-	log.Printf("%s Start Building Successors Index Map\n", bw.Name)
-	bw.publisher.Pool.Range(func(id string, conn net.Conn) {
-		bw.rwmutex.Lock()
-		bw.sucIndexMap[len(bw.sucIndexMap)] = id
-		bw.rwmutex.Unlock()
-	})
-}
+// // Build a successor boltworker's [index : netaddr] map
+// func (bw *BoltWorker) buildSucIndexMap() {
+// 	log.Printf("%s Start Building Successors Index Map\n", bw.Name)
+// 	bw.publisher.Pool.Range(func(id string, conn net.Conn) {
+// 		bw.rwmutex.Lock()
+// 		bw.sucIndexMap[len(bw.sucIndexMap)] = id
+// 		bw.rwmutex.Unlock()
+// 	})
+// }
 
 // Serialize and store executors' variables into local file
 func (bw *BoltWorker) SerializeVariables(version string) {
