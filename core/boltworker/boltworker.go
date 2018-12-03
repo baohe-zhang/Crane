@@ -126,9 +126,6 @@ func (bw *BoltWorker) Start() {
 	go bw.publisher.PublishMessage(bw.publisher.PublishBoard)
 	time.Sleep(1 * time.Second) // Wait for all boltWorkers' publisher established
 
-	// Listen to subscriber, they will tell who they are
-	go bw.listenToSubscribers()
-
 	// Start subscribers
 	for _, subAddr := range bw.subAddrs {
 		subscriber := messages.NewSubscriber(subAddr)
@@ -137,6 +134,9 @@ func (bw *BoltWorker) Start() {
 		go subscriber.RequestMessage()
 	}
 	time.Sleep(1 * time.Second) // Wait for all subscriber established
+
+	// Listen to subscriber, they will tell who they are
+	go bw.listenToSubscribers()
 
 	// Tell the previous hop who am I
 	for _, subscriber := range bw.subscribers {
