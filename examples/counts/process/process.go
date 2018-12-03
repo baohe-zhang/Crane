@@ -45,13 +45,10 @@ func WordCountBolt(tuple []interface{}, result *[]interface{}, variables *[]inte
 		_, ok := countMap[word]
 		if !ok {
 			countMap[word] = float64(0)
-			countMap[word] = countMap[word].(float64) + 1
-			log.Printf("Word Count Bolt Emit: (%v)\n", []interface{}{word, countMap[word].(float64)})
 		}
+		countMap[word] = countMap[word].(float64) + 1
+		log.Printf("Word Count Bolt Emit: (%v)\n", []interface{}{word, countMap[word].(float64)})
 	}
-
-	// *result = []interface{}{word, countMap[word].(float64)}
-	// log.Printf("Word Count Bolt Emit: (%v)\n", *result)
 
 	// Return value
 	if (len(*result) > 0) {
@@ -66,7 +63,7 @@ func WordSpout(tuple []interface{}, result *[]interface{}, variables *[]interfac
 	// Variables
 	words := []string{
 		// "the", "cow", "jumped", "over", "moon",
-		"the", "cow", "jumped", "over", "moon",
+		"the cow jumped over moon",
 	}
 	var counterMap map[string]interface{}
 
