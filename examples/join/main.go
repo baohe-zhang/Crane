@@ -22,7 +22,7 @@ func main() {
 	// Create a bolt
 	// Params: name, pluginFile, pluginSymbol, groupingHint, fieldIndex
 	bm := bolt.NewBoltInst("GenderAgeJoinBolt", "process.so", "GenderAgeJoinBolt", utils.GROUPING_BY_ALL, 0)
-	bm.SetInstanceNum(10)
+	bm.SetInstanceNum(20)
 	bm.AddPrevTaskName("GenderSpout")
 	bm.AddPrevTaskName("AgeSpout")
 	tm.AddBolt(bm)
