@@ -141,7 +141,6 @@ func (bw *BoltWorker) Start() {
 		subscriber.Request <- messages.Message{
 			Payload: bin,
 		}
-		fmt.Println("hi")
 	}
 	// End tell
 
@@ -224,7 +223,9 @@ func (e *Executor) processTuple(tuple []interface{}) {
 	var result []interface{}
 	e.procFunc(tuple, &result, &e.variables)
 	// fmt.Printf("executor %d output tuple (%v)\n", e.id, result)
-	e.results <- result
+	if len(result) > 0 {
+		e.results <- result
+	}
 
 	e.available = true
 }
