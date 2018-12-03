@@ -81,7 +81,7 @@ func WordSpout(tuple []interface{}, result *[]interface{}, variables *[]interfac
 	counterMap = (*variables)[0].(map[string]interface{})
 
 	// Logic
-	if counterMap["counter"].(float64) < 10000 {
+	if counterMap["counter"].(float64) < 2000 {
 		log.Printf("Sentence Spout Counter %v\n", counterMap["counter"])
 		*result = []interface{}{(*variables)[1].([]string)[int(counterMap["counter"].(float64)) % len((*variables)[1].([]string))]}
 		log.Printf("Sentence Spout Emit: (%v)\n", *result)
