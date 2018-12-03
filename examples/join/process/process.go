@@ -13,7 +13,26 @@ import (
 
 // Sample merge bolt. Merge all join bolt's result
 func MergeBolt(tuple []interface{}, result *[]interface{}, variables *[]interface{}) error {
-	log.Printf("Merge Bolt Emit (%v)\n", tuple)
+	var idMap map[string]interface{}
+	// Initialize variables
+	if (len(*variables) == 0) {
+		idMap = make(map[string]interface{})
+		for id_ := 0; id_ < 5000; id_++ {
+			idMap[strconv.Itoa(id_)] = make([]interface{}, 2)
+		}
+		*variables = append(*variables, idMap)
+	}
+	// Get variables
+	idMap = (*variables)[0].(map[string]interface{})
+
+	// Process logic
+	if len(tuple) == 3{
+		id := tuple[0].(string)
+		idMap[id].([]interface{})[0] = tuple[1]
+		idMap[id].([]interface{})[1] = tuple[2]
+		log.Printf("Merge Bolt Emit (%v)\n", tuple)
+	}
+
 	return nil
 }
 
