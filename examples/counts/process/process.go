@@ -16,9 +16,10 @@ func WordSplitBolt(tuple []interface{}, result *[]interface{}, variables *[]inte
 	sentence := tuple[0].(string)
 	words := strings.Fields(sentence)
 
-	for _, word := range words {
-		*result = append(*result, word)
-	}
+	// for _, word := range words {
+	// 	*result = append(*result, word)
+	// }
+	*result = []interface{}{words}
 
 	if len(*result) > 0 {
 		log.Printf("Word Split Bolt Emit: (%v)\n", *result)
