@@ -19,7 +19,7 @@ func WordSplitBolt(tuple []interface{}, result *[]interface{}, variables *[]inte
 	// for _, word := range words {
 	// 	*result = append(*result, word)
 	// }
-	*result = []interface{}{words}
+	*result = []interface{}{words[0]}
 
 	if len(*result) > 0 {
 		log.Printf("Word Split Bolt Emit: (%v)\n", *result)
