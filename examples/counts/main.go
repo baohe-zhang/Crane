@@ -25,7 +25,7 @@ func main() {
 
 	cb := bolt.NewBoltInst("WordCountBolt", "process.so", "WordCountBolt", utils.GROUPING_BY_ALL, 0)
 	cb.SetInstanceNum(8)
-	cb.AddPrevTaskName("WordSplitBolt")
+	cb.AddPrevTaskName("WordSpout")
 	tm.AddBolt(cb)
 
 	tm.SubmitFile("./process.so", "process.so")
