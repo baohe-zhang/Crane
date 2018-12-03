@@ -5,30 +5,30 @@ import (
 	"log"
 	"time"
 	"errors"
-	"strings"
+	// "strings"
 	// "os"
 	// "bufio"
 )
 
-// Sample word split bolt
-func WordSplitBolt(tuple []interface{}, result *[]interface{}, variables *[]interface{}) error {
-	// Doesn't have state varuables
+// // Sample word split bolt
+// func WordSplitBolt(tuple []interface{}, result *[]interface{}, variables *[]interface{}) error {
+// 	// Doesn't have state varuables
 
-	// Process Logic
-	sentence := tuple[0].(string)
-	words := strings.Fields(sentence)
+// 	// Process Logic
+// 	sentence := tuple[0].(string)
+// 	words := strings.Fields(sentence)
 
-	for _, word := range words {
-		*result = []interface{}{word}
-	}
+// 	for _, word := range words {
+// 		*result = []interface{}{word}
+// 	}
 
-	if len(*result) > 0 {
-		log.Printf("Word Split Bolt Emit: (%v)\n", *result)
-		return nil
-	} else {
-		return errors.New("next tuple is nil")
-	}
-}
+// 	if len(*result) > 0 {
+// 		log.Printf("Word Split Bolt Emit: (%v)\n", *result)
+// 		return nil
+// 	} else {
+// 		return errors.New("next tuple is nil")
+// 	}
+// }
 
 // Sample word count bolt
 func WordCountBolt(tuple []interface{}, result *[]interface{}, variables *[]interface{}) error {
@@ -55,14 +55,14 @@ func WordCountBolt(tuple []interface{}, result *[]interface{}, variables *[]inte
 }
 
 // Sample word generator
-func SentenceSpout(tuple []interface{}, result *[]interface{}, variables *[]interface{}) error {
+func WordSpout(tuple []interface{}, result *[]interface{}, variables *[]interface{}) error {
 	// Variables
-	sentences := []string{
-		"the cow jumped over the moon",
-		"an apple a day keeps the doctor away",
-		"four score and seven years ago",
-		"snow white and the seven dwarfs",
-		"i am at two with nature",
+	words := []string{
+		"the", "cow", "jumped", "over", "the", "moon",
+		"an", "apple", "a", "day", "keeps", "the", "doctor", "away",
+		"four", "score", "and", "seven", "years", "ago",
+		"snow", "white", "and", "the", "seven", "dwarfs",
+		"i", "am", "at", "two", "with", "nature",
 	}
 	var counterMap map[string]interface{}
 
@@ -77,7 +77,7 @@ func SentenceSpout(tuple []interface{}, result *[]interface{}, variables *[]inte
 	// Logic
 	if counterMap["counter"].(float64) < 1000 {
 		log.Printf("Sentence Spout Counter %v\n", counterMap["counter"])
-		*result = []interface{}{sentences[int(counterMap["counter"].(float64)) % len(sentences)]}
+		*result = []interface{}{words[int(counterMap["counter"].(float64)) % len(words)]}
 		log.Printf("Sentence Spout Emit: (%v)\n", *result)
 		counterMap["counter"] = counterMap["counter"].(float64) + 1
 	}
