@@ -81,6 +81,7 @@ func WordSpout(tuple []interface{}, result *[]interface{}, variables *[]interfac
 		}
 	}
 	counterMap = (*variables)[0].(map[string]interface{})
+	words = (*variables)[1].([]string)
 
 	// Logic
 	if counterMap["counter"].(float64) < 10000 {
