@@ -49,7 +49,7 @@ func (pub *Publisher) PublishMessage(msgChan chan Message) {
 	for {
 		message := <-msgChan
 
-		log.Printf("Going to send message on socket %s", message.TargetConnId)
+		//log.Printf("Going to send message on socket %s", message.TargetConnId)
 
 		// send message to targetConn
 		targetConn := pub.Pool.Get(message.TargetConnId)
