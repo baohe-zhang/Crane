@@ -6,8 +6,8 @@ import (
 	"time"
 	"errors"
 	"strings"
-	// "os"
-	// "bufio"
+	"os"
+	"bufio"
 )
 
 // Sample word split bolt
@@ -62,10 +62,6 @@ func WordCountBolt(tuple []interface{}, result *[]interface{}, variables *[]inte
 // Sample word generator
 func WordSpout(tuple []interface{}, result *[]interface{}, variables *[]interface{}) error {
 	// Variables
-	words := []string{
-		// "the", "cow", "jumped", "over", "moon",
-		"the cow jumped over moon",
-	}
 	var counterMap map[string]interface{}
 
 	if (len(*variables) == 0) {
@@ -73,13 +69,21 @@ func WordSpout(tuple []interface{}, result *[]interface{}, variables *[]interfac
 		counterMap = make(map[string]interface{})
 		*variables = append(*variables, counterMap)
 		counterMap["counter"] = float64(0)
+
+		*variables = append(*variables, make([]string, 0))
+
+		file, _ := os.Open("corputs.txt")
+		scanner := bufio.NewScanner(file)
+		for scanner.Scan() {
+			(*variables)[1] = append((*variables)[1].([]string), scanner.Text())
+		}
 	}
 	counterMap = (*variables)[0].(map[string]interface{})
 
 	// Logic
 	if counterMap["counter"].(float64) < 10000 {
 		log.Printf("Sentence Spout Counter %v\n", counterMap["counter"])
-		*result = []interface{}{words[int(counterMap["counter"].(float64)) % len(words)]}
+		*result = []interface{}{(*variables)[1].([]string)[int(counterMap["counter"].(float64)) % len((*variables)[1].([]string))]}
 		log.Printf("Sentence Spout Emit: (%v)\n", *result)
 		counterMap["counter"] = counterMap["counter"].(float64) + 1
 	}
