@@ -16,7 +16,7 @@ import (
 )
 
 const (
-	BUFLEN   = 1024
+	BUFLEN   = 100
 	BUFFSIZE = 1024
 )
 
