@@ -109,7 +109,7 @@ func GenderSpout(tuple []interface{}, result *[]interface{}, variables *[]interf
 	genderArray = (*variables)[2]
 
 	// Logic
-	if counterMap["counter"].(float64) < 5000 {
+	if counterMap["counter"].(float64) < 1000 {
 		*result = []interface{}{idArray.([]interface{})[int(counterMap["counter"].(float64))], genderArray.([]interface{})[int(counterMap["counter"].(float64))]}
 		counterMap["counter"] = counterMap["counter"].(float64) + 1
 	}
@@ -165,7 +165,7 @@ func AgeSpout(tuple []interface{}, result *[]interface{}, variables *[]interface
 	ageArray = (*variables)[2]
 
 	// Logic
-	if counterMap["counter"].(float64) < 5000 {
+	if counterMap["counter"].(float64) < 1000 {
 		*result = []interface{}{idArray.([]interface{})[int(counterMap["counter"].(float64))], ageArray.([]interface{})[int(counterMap["counter"].(float64))]}
 		counterMap["counter"] = counterMap["counter"].(float64) + 1
 	}
