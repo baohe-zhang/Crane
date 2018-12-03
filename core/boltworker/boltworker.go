@@ -126,6 +126,9 @@ func (bw *BoltWorker) Start() {
 	go bw.publisher.PublishMessage(bw.publisher.PublishBoard)
 	time.Sleep(1 * time.Second) // Wait for all boltWorkers' publisher established
 
+	// Listen to subscriber, they will tell who they are
+	go bw.listenToSubscribers()
+
 	// Start subscribers
 	for _, subAddr := range bw.subAddrs {
 		subscriber := messages.NewSubscriber(subAddr)
@@ -144,8 +147,6 @@ func (bw *BoltWorker) Start() {
 	}
 	// End tell
 
-	// Listen to subscriber, they will tell who they are
-	go bw.listenToSubscribers()
 	time.Sleep(2 * time.Second) // Wait for spout to establish suc index map
 	fmt.Printf("Map: %v\n", bw.sucIndexMap)
 
