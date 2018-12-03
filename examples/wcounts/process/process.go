@@ -51,7 +51,12 @@ func WordCountBolt(tuple []interface{}, result *[]interface{}, variables *[]inte
 	*result = []interface{}{word, countMap[word].(float64)}
 	log.Printf("Word Count Bolt Emit: (%v)\n", *result)
 
-	return nil
+	// Return value
+	if (len(*result) > 0) {
+		return nil
+	} else {
+		return errors.New("next tuple is nil")
+	}
 }
 
 // Sample word generator
@@ -75,7 +80,7 @@ func WordSpout(tuple []interface{}, result *[]interface{}, variables *[]interfac
 	counterMap = (*variables)[0].(map[string]interface{})
 
 	// Logic
-	if counterMap["counter"].(float64) < 1000 {
+	if counterMap["counter"].(float64) < 10000 {
 		log.Printf("Sentence Spout Counter %v\n", counterMap["counter"])
 		*result = []interface{}{words[int(counterMap["counter"].(float64)) % len(words)]}
 		log.Printf("Sentence Spout Emit: (%v)\n", *result)
