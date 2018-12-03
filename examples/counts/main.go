@@ -18,13 +18,13 @@ func main() {
 
 	// Create a bolt
 	// Params: name, pluginFile, pluginSymbol, groupingHint, fieldIndex
-	sb := bolt.NewBoltInst("WordSplitBolt", "process.so", "WordSplitBolt", utils.GROUPING_BY_FIELD, 0)
-	sb.SetInstanceNum(2)
-	sb.AddPrevTaskName("WordSpout")
-	tm.AddBolt(sb)
+	// sb := bolt.NewBoltInst("WordSplitBolt", "process.so", "WordSplitBolt", utils.GROUPING_BY_FIELD, 0)
+	// sb.SetInstanceNum(2)
+	// sb.AddPrevTaskName("WordSpout")
+	// tm.AddBolt(sb)
 
 	cb := bolt.NewBoltInst("WordCountBolt", "process.so", "WordCountBolt", utils.GROUPING_BY_ALL, 0)
-	cb.SetInstanceNum(6)
+	cb.SetInstanceNum(8)
 	cb.AddPrevTaskName("WordSplitBolt")
 	tm.AddBolt(cb)
 
