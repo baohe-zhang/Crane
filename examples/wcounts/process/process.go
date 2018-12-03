@@ -81,7 +81,7 @@ func WordSpout(tuple []interface{}, result *[]interface{}, variables *[]interfac
 		log.Printf("Sentence Spout Emit: (%v)\n", *result)
 		counterMap["counter"] = counterMap["counter"].(float64) + 1
 	}
-	time.Sleep(10 * time.Millisecond)
+	time.Sleep(1 * time.Millisecond)
 
 	// Return value
 	if (len(*result) > 0) {
